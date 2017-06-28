@@ -1,0 +1,28 @@
+version: "2"
+services:
+  cloud-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+  salt:
+    build:
+      context: ./salt
+      dockerfile: Dockerfile
+      args:
+        - VULTR_KEY=${VULTR_KEY}
+        - DIGITALOCEAN_TOKEN=${DIGITALOCEAN_TOKEN}
+    volumes:
+      - ./salt:/app
+      - ./salt/etc/salt/cloud.providers.d:/etc/salt/cloud.providers.d
+      - ./salt/etc/salt/cloud.profiles.d:/etc/salt/cloud.profiles.d
+    working_dir: /app
+  terraform:
+    build:
+      context: ./terraform
+      dockerfile: Dockerfile
+      args:
+        - VULTR_KEY=${VULTR_KEY}
+        - DIGITALOCEAN_TOKEN=${DIGITALOCEAN_TOKEN}
+    working_dir: /app
+    volumes: 
+      - ./terraform:/app
