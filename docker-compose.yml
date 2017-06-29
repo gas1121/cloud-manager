@@ -2,8 +2,14 @@ version: "2"
 services:
   cloud-manager:
     build:
-      context: .
+      context: ./docker
       dockerfile: Dockerfile
+      args:
+        - VULTR_KEY=${VULTR_KEY}
+        - DIGITALOCEAN_TOKEN=${DIGITALOCEAN_TOKEN}
+        - USE_MIRROR=${USE_MIRROR}
+    networks:
+      - cloud-manager
   salt:
     build:
       context: ./salt
@@ -11,11 +17,14 @@ services:
       args:
         - VULTR_KEY=${VULTR_KEY}
         - DIGITALOCEAN_TOKEN=${DIGITALOCEAN_TOKEN}
+        - USE_MIRROR=${USE_MIRROR}
     volumes:
       - ./salt:/app
-      - ./salt/etc/salt/cloud.providers.d:/etc/salt/cloud.providers.d
-      - ./salt/etc/salt/cloud.profiles.d:/etc/salt/cloud.profiles.d
+      - ./salt/etc/salt/master.d:/etc/salt/master.d
     working_dir: /app
+    command: salt-api
+    expose:
+      - 8000
   terraform:
     build:
       context: ./terraform
@@ -26,3 +35,5 @@ services:
     working_dir: /app
     volumes: 
       - ./terraform:/app
+networks:
+  cloud-manager:
