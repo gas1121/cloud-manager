@@ -1,7 +1,5 @@
 FROM python:latest
 
-ARG VULTR_KEY
-ARG DIGITALOCEAN_TOKEN
 ARG USE_MIRROR=0
 
 # use ustc mirror if needed
