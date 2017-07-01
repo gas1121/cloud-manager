@@ -1,3 +1,0 @@
-vultr:
-  api_key: $VULTR_KEY
-  driver: vultr

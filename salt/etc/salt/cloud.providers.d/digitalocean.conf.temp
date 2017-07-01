@@ -1,3 +1,0 @@
-digitalocean:
-  driver: digital_ocean
-  personal_access_token: $DIGITALOCEAN_TOKEN

@@ -11,34 +11,6 @@ services:
     secrets:
       - VULTR_KEY
       - DIGITALOCEAN_TOKEN
-  salt:
-    build:
-      context: ./salt
-      dockerfile: Dockerfile
-      args:
-        - USE_MIRROR=${USE_MIRROR}
-    volumes:
-      - ./salt:/app
-      - ./salt/etc/salt/master.d:/etc/salt/master.d
-    working_dir: /app
-    command: salt-api
-    expose:
-      - 8000
-    secrets:
-      - VULTR_KEY
-      - DIGITALOCEAN_TOKEN
-  terraform:
-    build:
-      context: ./terraform
-      dockerfile: Dockerfile
-      args:
-        - USE_MIRROR=${USE_MIRROR}
-    working_dir: /app
-    volumes: 
-      - ./terraform:/app
-    secrets:
-      - VULTR_KEY
-      - DIGITALOCEAN_TOKEN
 networks:
   cloud-manager:
 secrets:

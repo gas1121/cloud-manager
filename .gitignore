@@ -1,3 +1,13 @@
+# virtualenv
+tcl/
+Lib/
+Scripts/
+Include/
+pip-selfcheck.json
+
+# vs code
+.vscode/
+
 # docker compoe env file
 .env
 
