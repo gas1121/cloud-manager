@@ -4,9 +4,18 @@ from flask_restplus import Api, Resource, abort, apidoc
 from cloudmanager import cloud_manager
 
 
-class CloudManagerAPI(Resource):
-    def get(self, host):
-        if host in ['vultr', 'digitalocean']:
+class CloudCreateAPI(Resource):
+    def post(self, server_number):
+        if server_number in ['vultr', 'digitalocean']:
+            data = cloud_manager.list_machine()
+            return {"message": data}
+        else:
+            abort(404)
+
+
+class CloudDestroyAPI(Resource):
+    def post(self, server_number):
+        if server_number in ['vultr', 'digitalocean']:
             data = cloud_manager.list_machine()
             return {"message": data}
         else:
@@ -24,7 +33,8 @@ app.register_blueprint(apidoc.apidoc, url_prefix=url_prefix)
 blueprint = Blueprint('', __name__, url_prefix=url_prefix)
 api = Api(blueprint, version='1.0', title='Cloud manager api',
           description='API for cloud manager', doc='/doc/')
-api.add_resource(CloudManagerAPI, '/<host>/', endpoint='')
+api.add_resource(CloudCreateAPI, '/create/<server_number>/', endpoint='')
+api.add_resource(CloudDestroyAPI, '/destroy/<server_number>/', endpoint='')
 app.register_blueprint(blueprint)
 
 
