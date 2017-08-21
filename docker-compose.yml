@@ -3,7 +3,7 @@ services:
   cloud-manager:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/cloudmanager/Dockerfile
       args:
         - USE_MIRROR=${USE_MIRROR:-0}
     networks:
