@@ -1,3 +1,3 @@
 provider "vultr" {
-    api_key = "$VULTR_KEY"
+    api_key = "${file("/var/run/secrets/VULTR_KEY")}"
 }

@@ -1,3 +1,3 @@
 provider "digitalocean" {
-    token = "$DIGITALOCEAN_TOKEN"
+    token = "${file("/var/run/secrets/DIGITALOCEAN_TOKEN")}"
 }
