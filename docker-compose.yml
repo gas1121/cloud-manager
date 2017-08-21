@@ -1,16 +1,31 @@
-version: "3.1"
+version: "3.2"
 services:
   cloud-manager:
     build:
       context: .
       dockerfile: docker/Dockerfile
       args:
-        - USE_MIRROR=${USE_MIRROR}
+        - USE_MIRROR=${USE_MIRROR:-0}
     networks:
       - cloud-manager
     secrets:
       - VULTR_KEY
       - DIGITALOCEAN_TOKEN
+  terraform:
+    build:
+      context: .
+      dockerfile: docker/terraform/Dockerfile
+      args:
+        - USE_MIRROR=${USE_MIRROR:-0}
+    working_dir: /app
+    volumes: 
+      - ./docker/terraform:/app
+    networks:
+      - cloud-manager
+    secrets:
+      - VULTR_KEY
+      - DIGITALOCEAN_TOKEN
+    entrypoint: bash -c
 networks:
   cloud-manager:
 secrets:
