@@ -11,6 +11,8 @@ services:
     secrets:
       - VULTR_KEY
       - DIGITALOCEAN_TOKEN
+      - SSH_PRIVATE_KEY
+      - SSH_PUBLIC_KEY
   terraform:
     build:
       context: .
@@ -25,6 +27,8 @@ services:
     secrets:
       - VULTR_KEY
       - DIGITALOCEAN_TOKEN
+      - SSH_PRIVATE_KEY
+      - SSH_PUBLIC_KEY
     entrypoint: bash -c
 networks:
   cloud-manager:
@@ -33,3 +37,7 @@ secrets:
     file: secrets/vultr.txt
   DIGITALOCEAN_TOKEN:
     file: secrets/digitalocean.txt
+  SSH_PRIVATE_KEY:
+    file: secrets/ssh-private-key
+  SSH_PUBLIC_KEY:
+    file: secrets/ssh-key.pub
