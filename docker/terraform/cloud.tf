@@ -65,6 +65,7 @@ resource "vultr_instance" "master" {
     os_id = "${data.vultr_os.ubuntu.id}"
     ssh_key_ids = ["${vultr_ssh_key.key.id}"]
     tag = "master"
+    private_networking = true
 
     provisioner "file" {
         source      = "ubuntu-init.sh"
@@ -99,16 +100,6 @@ resource "vultr_instance" "master" {
     }
 }
 
-resource "vultr_ipv4" "extra_ip" {
-  instance_id = "${vultr_instance.master.id}"
-  reboot      = false
-  count       = 1
-}
-
 output ip_addresses {
-    value = "${concat(vultr_ipv4.extra_ip.*.ipv4_address, list(vultr_instance.master.ipv4_address))}"
-}
-
-output initial_password {
-    value = "${vultr_instance.master.default_password}"
+    value = "${concat(list(vultr_instance.master.ipv4_address))}"
 }
