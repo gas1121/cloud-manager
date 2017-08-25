@@ -1,7 +1,10 @@
 #! /bin/bash
 
 # initialization for ssh
-# config ssh
+# Disable password authentication
+#grep -q "ChallengeResponseAuthentication" /etc/ssh/sshd_config && sed -i "/^[^#]*ChallengeResponseAuthentication[[:space:]]yes.*/c\ChallengeResponseAuthentication no" /etc/ssh/sshd_config || echo "ChallengeResponseAuthentication no" >> /etc/ssh/sshd_config
+#grep -q "^[^#]*PasswordAuthentication" /etc/ssh/sshd_config && sed -i "/^[^#]*PasswordAuthentication[[:space:]]yes/c\PasswordAuthentication no" /etc/ssh/sshd_config || echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+#service ssh restart
 
 # initialization for ubuntu mirror
 # if needed, config ubuntu ustc mirror
@@ -60,6 +63,11 @@ EOF
 fi
 
 # initialization for Python
+# install python if needed
+if ! type python 2>/dev/null; then
+    echo "python not exist, install first..."
+    apt-get install -y python
+fi
 # if needed, config pip ustc mirror
 if [[ "$1" == "use_mirror" ]] && [[ ! -f ~/.pip/pip.conf ]]; then
     echo "set ustc mirror for pip..."

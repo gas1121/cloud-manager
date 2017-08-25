@@ -67,27 +67,10 @@ resource "vultr_instance" "master" {
     tag = "master"
     private_networking = true
 
-    provisioner "file" {
-        source      = "ubuntu-init.sh"
-        destination = "/tmp/ubuntu-init.sh"
-        connection {
-            host = "${self.ipv4_address}"
-            type = "ssh"
-            user = "root"
-            password    = "${self.default_password}"
-            private_key = "${file("/var/run/secrets/SSH_PRIVATE_KEY")}"
-            timeout     = "2m"
-        }
-    }
-
     provisioner "remote-exec" {
-        inline = [
-            "ls /tmp/",
-            "docker -v",
-            "docker-compose -v",
-            "ip -o addr",
-            "chmod +x /tmp/ubuntu-init.sh",
-            ". /tmp/ubuntu-init.sh"
+        scripts = [
+            "ubuntu-init.sh",
+            "private-network-setup.sh ${self.ipv4_private_address}"
         ]
         connection {
             host = "${self.ipv4_address}"
@@ -100,6 +83,45 @@ resource "vultr_instance" "master" {
     }
 }
 
-output ip_addresses {
+resource "vultr_instance" "servant" {
+    //count = 3
+    name = "servant"
+    hostname = "servant"
+    region_id = "${data.vultr_region.tokyo.id}"
+    plan_id = "${data.vultr_plan.starter.id}"
+    os_id = "${data.vultr_os.ubuntu.id}"
+    ssh_key_ids = ["${vultr_ssh_key.key.id}"]
+    tag = "servant"
+    private_networking = true
+
+    provisioner "remote-exec" {
+        scripts = [
+            "ubuntu-init.sh",
+            "private-network-setup.sh ${self.ipv4_private_address}"
+        ]
+        connection {
+            host = "${self.ipv4_address}"
+            type = "ssh"
+            user = "root"
+            password    = "${self.default_password}"
+            private_key = "${file("/var/run/secrets/SSH_PRIVATE_KEY")}"
+            timeout     = "2m"
+        }
+    }
+}
+
+output master_ip_addresses {
     value = "${concat(list(vultr_instance.master.ipv4_address))}"
+}
+
+output master_private_ip_addresses {
+    value = "${concat(list(vultr_instance.master.ipv4_private_address))}"
+}
+
+output servant_ip_addresses {
+    value = "${concat(list(vultr_instance.servant.*.ipv4_address))}"
+}
+
+output servant_private_ip_addresses {
+    value = "${concat(list(vultr_instance.servant.*.ipv4_private_address))}"
 }
