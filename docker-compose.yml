@@ -22,6 +22,8 @@ services:
     working_dir: /app
     volumes: 
       - ./docker/terraform:/app
+    environment:
+      - TF_VAR_SERVANT_COUNT=${TF_VAR_SERVANT_COUNT:-0}
     networks:
       - cloud-manager
     secrets:

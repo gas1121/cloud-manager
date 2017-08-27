@@ -1,3 +1,5 @@
+variable "SERVANT_COUNT" {}
+
 data "vultr_region" "tokyo" {
     filter {
         name = "name"
@@ -84,7 +86,7 @@ resource "vultr_instance" "master" {
 }
 
 resource "vultr_instance" "servant" {
-    //count = 3
+    count = "${var.SERVANT_COUNT}"
     name = "servant"
     hostname = "servant"
     region_id = "${data.vultr_region.tokyo.id}"
@@ -116,6 +118,10 @@ output master_ip_addresses {
 
 output master_private_ip_addresses {
     value = "${concat(list(vultr_instance.master.ipv4_private_address))}"
+}
+
+output servant_count {
+    value = "${var.SERVANT_COUNT}"
 }
 
 output servant_ip_addresses {
