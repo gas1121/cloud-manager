@@ -6,6 +6,11 @@ services:
       dockerfile: docker/cloudmanager/Dockerfile
       args:
         - USE_MIRROR=${USE_MIRROR:-0}
+    working_dir: /app
+    volumes: 
+      - ./cloudmanager:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    privileged: true
     networks:
       - cloud-manager
     secrets:
