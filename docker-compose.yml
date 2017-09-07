@@ -24,13 +24,16 @@ services:
       dockerfile: docker/terraform/Dockerfile
       args:
         - USE_MIRROR=${USE_MIRROR:-0}
-    working_dir: /app
+    working_dir: /terraform
     volumes: 
       - tf-workspace:/app
       - tf-salt-share:/tf-salt-share
+      - ./docker/terraform:/terraform
     environment:
       - TF_VAR_MASTER_COUNT=${TF_VAR_SERVANT_COUNT:-1}
+      - TF_VAR_MASTER_PLAN=${TF_VAR_MASTER_PLAN:-starter}
       - TF_VAR_SERVANT_COUNT=${TF_VAR_SERVANT_COUNT:-0}
+      - TF_VAR_SERVANT_PLAN=${TF_VAR_SERVANT_PLAN:-starter}
     networks:
       - cloud-manager
     secrets:
@@ -38,7 +41,6 @@ services:
       - DIGITALOCEAN_TOKEN
       - SSH_PRIVATE_KEY
       - SSH_PUBLIC_KEY
-    entrypoint: bash -c
   salt:
     build:
       context: .
@@ -66,6 +68,6 @@ secrets:
   DIGITALOCEAN_TOKEN:
     file: secrets/digitalocean.txt
   SSH_PRIVATE_KEY:
-    file: secrets/ssh-private-key
+    file: secrets/cloud-manager-ssh-key
   SSH_PUBLIC_KEY:
-    file: secrets/ssh-key.pub
+    file: secrets/cloud-manager-ssh-key.pub

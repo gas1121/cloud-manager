@@ -1,4 +1,7 @@
+variable "MASTER_COUNT" {}
+variable "MASTER_PLAN" {}
 variable "SERVANT_COUNT" {}
+variable "SERVANT_PLAN" {}
 
 data "vultr_region" "tokyo" {
     filter {
@@ -24,27 +27,27 @@ data "vultr_os" "ubuntu" {
     }
 }
 
-data "vultr_plan" "starter" {
+data "vultr_plan" "master" {
   filter {
     name   = "price_per_month"
-    values = ["5.00"]
+    values = ["${var.MASTER_PLAN == "starter" ? "5.00" : "10.00"}"]
   }
 
   filter {
     name   = "ram"
-    values = ["1024"]
+    values = ["${var.MASTER_PLAN == "starter" ? "1024" : "2048"}"]
   }
 }
 
-data "vultr_plan" "advanced" {
+data "vultr_plan" "servant" {
   filter {
     name   = "price_per_month"
-    values = ["10.00"]
+    values = ["${var.SERVANT_PLAN == "starter" ? "5.00" : "10.00"}"]
   }
 
   filter {
     name   = "ram"
-    values = ["2048"]
+    values = ["${var.SERVANT_PLAN == "starter" ? "1024" : "2048"}"]
   }
 }
 
@@ -76,7 +79,7 @@ resource "vultr_instance" "master" {
     name = "master"
     hostname = "master"
     region_id = "${data.vultr_region.tokyo.id}"
-    plan_id = "${data.vultr_plan.starter.id}"
+    plan_id = "${data.vultr_plan.master.id}"
     os_id = "${data.vultr_os.ubuntu.id}"
     ssh_key_ids = ["${vultr_ssh_key.key.id}"]
     tag = "master"
@@ -84,7 +87,7 @@ resource "vultr_instance" "master" {
 
     provisioner "remote-exec" {
         scripts = [
-            "/scripts/private-network-setup.sh ${self.ipv4_private_address}",
+            //"/scripts/private-network-setup.sh ${self.ipv4_private_address}",
             "/scripts/ubuntu-init.sh"
         ]
         connection {
@@ -103,7 +106,7 @@ resource "vultr_instance" "servant" {
     name = "servant"
     hostname = "servant"
     region_id = "${data.vultr_region.tokyo.id}"
-    plan_id = "${data.vultr_plan.starter.id}"
+    plan_id = "${data.vultr_plan.servant.id}"
     os_id = "${data.vultr_os.ubuntu.id}"
     ssh_key_ids = ["${vultr_ssh_key.key.id}"]
     tag = "servant"
@@ -111,7 +114,6 @@ resource "vultr_instance" "servant" {
 
     provisioner "remote-exec" {
         scripts = [
-            "/scripts/private-network-setup.sh ${self.ipv4_private_address}",
             "/scripts/ubuntu-init.sh"
         ]
         connection {
@@ -125,12 +127,16 @@ resource "vultr_instance" "servant" {
     }
 }
 
+output master_count {
+    value = "${var.MASTER_COUNT}"
+}
+
 output master_ip_addresses {
-    value = "${concat(list(vultr_instance.master.ipv4_address))}"
+    value = "${concat(list(vultr_instance.master.*.ipv4_address))}"
 }
 
 output master_private_ip_addresses {
-    value = "${concat(list(vultr_instance.master.ipv4_private_address))}"
+    value = "${concat(list(vultr_instance.master.*.ipv4_private_address))}"
 }
 
 output servant_count {

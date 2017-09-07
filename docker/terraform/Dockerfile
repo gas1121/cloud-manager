@@ -25,7 +25,5 @@ RUN go get -u github.com/squat/terraform-provider-vultr
 
 COPY docker/terraform/.terraformrc /root/.terraformrc
 COPY docker/terraform /app
-COPY scripts /scripts
+COPY cloud-scripts /cloud-scripts
 WORKDIR /app
-
-ENTRYPOINT ["/bin/terraform"]
