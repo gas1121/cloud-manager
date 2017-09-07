@@ -26,8 +26,10 @@ services:
         - USE_MIRROR=${USE_MIRROR:-0}
     working_dir: /app
     volumes: 
-      - ./docker/terraform:/app
+      - tf-workspace:/app
+      - tf-salt-share:/tf-salt-share
     environment:
+      - TF_VAR_MASTER_COUNT=${TF_VAR_SERVANT_COUNT:-1}
       - TF_VAR_SERVANT_COUNT=${TF_VAR_SERVANT_COUNT:-0}
     networks:
       - cloud-manager
@@ -37,8 +39,27 @@ services:
       - SSH_PRIVATE_KEY
       - SSH_PUBLIC_KEY
     entrypoint: bash -c
+  salt:
+    build:
+      context: .
+      dockerfile: docker/salt/Dockerfile
+      args:
+        - USE_MIRROR=${USE_MIRROR:-0}
+    volumes: 
+      - tf-salt-share:/tf-salt-share
+      - ./docker/salt:/salt
+    networks:
+      - cloud-manager
+    secrets:
+      - VULTR_KEY
+      - DIGITALOCEAN_TOKEN
+      - SSH_PRIVATE_KEY
+      - SSH_PUBLIC_KEY
 networks:
   cloud-manager:
+volumes:
+  tf-workspace:
+  tf-salt-share:
 secrets:
   VULTR_KEY:
     file: secrets/vultr.txt

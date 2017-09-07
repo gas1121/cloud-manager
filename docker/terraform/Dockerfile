@@ -23,10 +23,9 @@ RUN echo "${TERRAFORM_SHA256SUM}  terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 # add vultr and digitalocean plugin
 RUN go get -u github.com/squat/terraform-provider-vultr
 
-#ENV VULTR_PROVIDER_VERSION 0.1.2
-#ADD https://github.com/elricsfate/terraform-provider-vultr/releases/download/v${VULTR_PROVIDER_VERSION}/terraform_provider_vultr-v${VULTR_PROVIDER_VERSION}.tar.gz /temp/terraform_provider_vultr-v${VULTR_PROVIDER_VERSION}.tar.gz
-#RUN tar -xf /temp/terraform_provider_vultr-v${VULTR_PROVIDER_VERSION}.tar.gz -C /usr/local/bin
-
 COPY docker/terraform/.terraformrc /root/.terraformrc
+COPY docker/terraform /app
+COPY scripts /scripts
+WORKDIR /app
 
 ENTRYPOINT ["/bin/terraform"]

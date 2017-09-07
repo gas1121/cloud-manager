@@ -41,7 +41,7 @@ if type docker-compose 2>/dev/null; then
     echo "docker-compose is installed, skip."
 else
     echo "install docker compose..."
-    COMPOSE_VERSION=1.14.0
+    COMPOSE_VERSION=1.16.1
     COMPOSE_ADDRESS=https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m`
     if curl -L ${COMPOSE_ADDRESS} > /usr/local/bin/docker-compose; then
         chmod +x /usr/local/bin/docker-compose

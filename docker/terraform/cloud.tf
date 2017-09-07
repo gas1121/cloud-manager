@@ -36,6 +36,18 @@ data "vultr_plan" "starter" {
   }
 }
 
+data "vultr_plan" "advanced" {
+  filter {
+    name   = "price_per_month"
+    values = ["10.00"]
+  }
+
+  filter {
+    name   = "ram"
+    values = ["2048"]
+  }
+}
+
 resource "vultr_ssh_key" "key" {
   name       = "key"
   public_key = "${file("/var/run/secrets/SSH_PUBLIC_KEY")}"
@@ -60,6 +72,7 @@ resource "vultr_firewall_rule" "icmp" {
 }
 
 resource "vultr_instance" "master" {
+    count = "${var.MASTER_COUNT}"
     name = "master"
     hostname = "master"
     region_id = "${data.vultr_region.tokyo.id}"
@@ -71,8 +84,8 @@ resource "vultr_instance" "master" {
 
     provisioner "remote-exec" {
         scripts = [
-            "ubuntu-init.sh",
-            "private-network-setup.sh ${self.ipv4_private_address}"
+            "/scripts/private-network-setup.sh ${self.ipv4_private_address}",
+            "/scripts/ubuntu-init.sh"
         ]
         connection {
             host = "${self.ipv4_address}"
@@ -98,8 +111,8 @@ resource "vultr_instance" "servant" {
 
     provisioner "remote-exec" {
         scripts = [
-            "ubuntu-init.sh",
-            "private-network-setup.sh ${self.ipv4_private_address}"
+            "/scripts/private-network-setup.sh ${self.ipv4_private_address}",
+            "/scripts/ubuntu-init.sh"
         ]
         connection {
             host = "${self.ipv4_address}"
