@@ -84,21 +84,6 @@ resource "vultr_instance" "master" {
     ssh_key_ids = ["${vultr_ssh_key.key.id}"]
     tag = "master"
     private_networking = true
-
-    provisioner "remote-exec" {
-        scripts = [
-            //"/scripts/private-network-setup.sh ${self.ipv4_private_address}",
-            "/scripts/ubuntu-init.sh"
-        ]
-        connection {
-            host = "${self.ipv4_address}"
-            type = "ssh"
-            user = "root"
-            password    = "${self.default_password}"
-            private_key = "${file("/var/run/secrets/SSH_PRIVATE_KEY")}"
-            timeout     = "2m"
-        }
-    }
 }
 
 resource "vultr_instance" "servant" {
@@ -111,20 +96,6 @@ resource "vultr_instance" "servant" {
     ssh_key_ids = ["${vultr_ssh_key.key.id}"]
     tag = "servant"
     private_networking = true
-
-    provisioner "remote-exec" {
-        scripts = [
-            "/scripts/ubuntu-init.sh"
-        ]
-        connection {
-            host = "${self.ipv4_address}"
-            type = "ssh"
-            user = "root"
-            password    = "${self.default_password}"
-            private_key = "${file("/var/run/secrets/SSH_PRIVATE_KEY")}"
-            timeout     = "2m"
-        }
-    }
 }
 
 output master_count {
