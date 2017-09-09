@@ -1,3 +1,5 @@
+roster
+
 .terraform
 *.tfstate
 *.tfstate.backup
