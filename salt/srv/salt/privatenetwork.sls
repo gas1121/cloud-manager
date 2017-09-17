@@ -4,7 +4,7 @@ private-network:
     - name: ens7
     - enabled: True
     - type: eth
-    - proto: none
+    - proto: static
     - ipaddr: {{ pillar['network']['private']['address'] }}
     - netmask: 255.255.0.0
     - mtu: 1450

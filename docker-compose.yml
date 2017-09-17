@@ -9,15 +9,12 @@ services:
     working_dir: /app
     volumes: 
       - ./cloudmanager:/app
+      - cloud-manager-share:/cloud-manager-share
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./secrets:/var/run/secrets
     privileged: true
     networks:
       - cloud-manager
-    secrets:
-      - VULTR_KEY
-      - DIGITALOCEAN_TOKEN
-      - SSH_PRIVATE_KEY
-      - SSH_PUBLIC_KEY
   terraform:
     build:
       context: .
@@ -27,8 +24,9 @@ services:
     working_dir: /terraform
     volumes: 
       - tf-workspace:/app
-      - tf-salt-share:/tf-salt-share
+      - cloud-manager-share:/cloud-manager-share
       - ./docker/terraform:/terraform
+      - ./secrets:/var/run/secrets
     environment:
       - TF_VAR_MASTER_COUNT=${TF_VAR_SERVANT_COUNT:-1}
       - TF_VAR_MASTER_PLAN=${TF_VAR_MASTER_PLAN:-starter}
@@ -36,11 +34,6 @@ services:
       - TF_VAR_SERVANT_PLAN=${TF_VAR_SERVANT_PLAN:-starter}
     networks:
       - cloud-manager
-    secrets:
-      - VULTR_KEY
-      - DIGITALOCEAN_TOKEN
-      - SSH_PRIVATE_KEY
-      - SSH_PUBLIC_KEY
   salt:
     build:
       context: .
@@ -48,26 +41,13 @@ services:
       args:
         - USE_MIRROR=${USE_MIRROR:-0}
     volumes: 
-      - tf-salt-share:/tf-salt-share
+      - cloud-manager-share:/cloud-manager-share
       - ./docker/salt:/salt
+      - ./secrets:/var/run/secrets
     networks:
       - cloud-manager
-    secrets:
-      - VULTR_KEY
-      - DIGITALOCEAN_TOKEN
-      - SSH_PRIVATE_KEY
-      - SSH_PUBLIC_KEY
 networks:
   cloud-manager:
 volumes:
   tf-workspace:
-  tf-salt-share:
-secrets:
-  VULTR_KEY:
-    file: secrets/vultr.txt
-  DIGITALOCEAN_TOKEN:
-    file: secrets/digitalocean.txt
-  SSH_PRIVATE_KEY:
-    file: secrets/cloud-manager-ssh-key
-  SSH_PUBLIC_KEY:
-    file: secrets/cloud-manager-ssh-key.pub
+  cloud-manager-share:

@@ -1,5 +1,4 @@
 requests[socks]
 flask-restplus
 gunicorn
-python-digitalocean
-vultr
+docker

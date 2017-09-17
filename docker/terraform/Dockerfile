@@ -24,6 +24,5 @@ RUN echo "${TERRAFORM_SHA256SUM}  terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 RUN go get -u github.com/squat/terraform-provider-vultr
 
 COPY docker/terraform/.terraformrc /root/.terraformrc
-COPY docker/terraform /app
-COPY cloud-scripts /cloud-scripts
+COPY terraform /app
 WORKDIR /app

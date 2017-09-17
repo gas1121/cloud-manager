@@ -1,4 +1,5 @@
 roster
+pillar
 
 .terraform
 *.tfstate
