@@ -1,0 +1,5 @@
+base:
+  '*':
+    - privatenetwork
+  #master:
+  #servant:
