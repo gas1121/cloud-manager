@@ -5,6 +5,7 @@
 #    pip-compile --no-index --output-file cloudmanager/requirements.txt cloudmanager/requirements.in
 #
 aniso8601==1.2.1          # via flask-restplus
+arrow==0.10.0
 certifi==2017.4.17        # via requests
 chardet==3.0.4            # via requests
 click==6.7                # via flask
@@ -19,7 +20,7 @@ jinja2==2.9.6             # via flask
 jsonschema==2.6.0         # via flask-restplus
 markupsafe==1.0           # via jinja2
 pysocks==1.6.7            # via requests
-python-dateutil==2.6.0    # via aniso8601
+python-dateutil==2.6.0    # via aniso8601, arrow
 pytz==2017.2              # via flask-restplus
 requests[socks]==2.18.1
 six==1.10.0               # via docker, docker-pycreds, flask-restplus, python-dateutil, websocket-client

@@ -2,3 +2,4 @@ requests[socks]
 flask-restplus
 gunicorn
 docker
+arrow
