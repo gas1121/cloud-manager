@@ -53,7 +53,7 @@ data "vultr_plan" "servant" {
 
 resource "vultr_ssh_key" "key" {
   name       = "key"
-  public_key = "${file("/var/run/secrets/SSH_PUBLIC_KEY")}"
+  public_key = "${file("/var/run/secrets/cloud-manager-ssh-key.pub")}"
 }
 
 resource "vultr_firewall_group" "default" {
@@ -98,26 +98,18 @@ resource "vultr_instance" "servant" {
     private_networking = true
 }
 
-output master_count {
-    value = "${var.MASTER_COUNT}"
-}
-
 output master_ip_addresses {
-    value = "${concat(list(vultr_instance.master.*.ipv4_address))}"
+    value = ["${vultr_instance.master.*.ipv4_address}"]
 }
 
 output master_private_ip_addresses {
-    value = "${concat(list(vultr_instance.master.*.ipv4_private_address))}"
-}
-
-output servant_count {
-    value = "${var.SERVANT_COUNT}"
+    value = ["${vultr_instance.master.*.ipv4_private_address}"]
 }
 
 output servant_ip_addresses {
-    value = "${concat(list(vultr_instance.servant.*.ipv4_address))}"
+    value = ["${vultr_instance.servant.*.ipv4_address}"]
 }
 
 output servant_private_ip_addresses {
-    value = "${concat(list(vultr_instance.servant.*.ipv4_private_address))}"
+    value = ["${vultr_instance.servant.*.ipv4_private_address}"]
 }

@@ -28,7 +28,7 @@ services:
       - cloud-manager-share:/cloud-manager-share
       - ./secrets:/var/run/secrets
     environment:
-      - TF_VAR_MASTER_COUNT=${TF_VAR_SERVANT_COUNT:-1}
+      - TF_VAR_MASTER_COUNT=${TF_VAR_SERVANT_COUNT:-0}
       - TF_VAR_MASTER_PLAN=${TF_VAR_MASTER_PLAN:-starter}
       - TF_VAR_SERVANT_COUNT=${TF_VAR_SERVANT_COUNT:-0}
       - TF_VAR_SERVANT_PLAN=${TF_VAR_SERVANT_PLAN:-starter}

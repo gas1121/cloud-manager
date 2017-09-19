@@ -107,18 +107,29 @@ class CloudManager(object):
             command="terraform output -json > " + self.terraform_result_file)
 
     def _prepare_salt_data(self, data):
-        # prepare data
-        render_data = {}
         # refresh /cloud-manager-share/roster
         env = Environment(
             loader=PackageLoader('cloudmanager', package_path='templates'),
         )
         template = env.get_template('roster.jinja')
         with open('/cloud-manager-share/roster', 'rw') as f:
-            f.write(template.render(render_data))
+            f.write(template.render(data))
         # prepare salt pillar dict
-        pillar_dict = {}
-        # TODO
+        pillar_dict = {
+            'privatenetwork': [],
+        }
+        for index, value in enumerate(data['master_ip_addresses']['value']):
+            pillar_dict['privatenetwork'].append({
+                'ip': value,
+                'private_ip': data[
+                    'master_private_ip_addresses']['value'][index],
+            })
+        for index, value in enumerate(data['servant_ip_addresses']['value']):
+            pillar_dict['privatenetwork'].append({
+                'ip': value,
+                'private_ip': data[
+                    'servant_private_ip_addresses']['value'][index],
+            })
         return pillar_dict
 
     def _do_salt_init_job(self, pillar_dict):
