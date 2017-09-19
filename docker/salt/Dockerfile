@@ -25,6 +25,7 @@ WORKDIR /salt-formulas
 #RUN git clone https://github.com/saltstack-formulas/apt-formula.git
 
 COPY ./salt/master.d/master.conf /etc/salt/master.d/master.conf
+COPY ./salt/srv /srv
 
 WORKDIR /app
 

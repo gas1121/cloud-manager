@@ -6,6 +6,7 @@ services:
       dockerfile: docker/cloudmanager/Dockerfile
       args:
         - USE_MIRROR=${USE_MIRROR:-0}
+    image: cloud-manager
     working_dir: /app
     volumes: 
       - ./cloudmanager:/app
@@ -21,11 +22,10 @@ services:
       dockerfile: docker/terraform/Dockerfile
       args:
         - USE_MIRROR=${USE_MIRROR:-0}
-    working_dir: /terraform
+    image: cloud-manager-terraform
     volumes: 
       - tf-workspace:/app
       - cloud-manager-share:/cloud-manager-share
-      - ./docker/terraform:/terraform
       - ./secrets:/var/run/secrets
     environment:
       - TF_VAR_MASTER_COUNT=${TF_VAR_SERVANT_COUNT:-1}
@@ -40,9 +40,9 @@ services:
       dockerfile: docker/salt/Dockerfile
       args:
         - USE_MIRROR=${USE_MIRROR:-0}
+    image: cloud-manager-salt
     volumes: 
       - cloud-manager-share:/cloud-manager-share
-      - ./docker/salt:/salt
       - ./secrets:/var/run/secrets
     networks:
       - cloud-manager

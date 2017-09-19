@@ -1,0 +1,16 @@
+{% for ip in master_ip_list %}
+master-{{ loop.index }}:
+  host: {{ ip }}
+  port: 22
+  user: root
+  sudo: True
+  priv: /var/run/secrets/cloud-manager-ssh-key
+{% endfor %}
+{% for ip in servant_ip_list %}
+servant-{{ loop.index }}:
+  host: {{ ip }}
+  port: 22
+  user: root
+  sudo: True
+  priv: /var/run/secrets/cloud-manager-ssh-key
+{% endfor %}
