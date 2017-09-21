@@ -9,31 +9,45 @@ from jinja2 import Environment, PackageLoader
 
 class CloudManager(object):
     """
-    Manager for cloud vps resource with following rules:
-        1. Store all request vps count and use max of them to create
+    Manage cloud vps resource with following rules:
+        1. Store all request vps count and use max of them as vps number,
         2. All request expire after 24 hours, and if no request left,
            destroy all created vps
-        3. Every request come with a unique key to identify, and when
-           scale down request come value stored with key is modified
+        3. Every request come with a unique key to identify
+        4. Every 5 minutes cloud manager will check itself
     """
     def __init__(self):
         self.scale_dict = {}
         self.expire_hour = 24
         self.terraform_result_file = "/cloud-manager-share/result.json"
 
-    def scale_cloud(self, key, count):
-        self.scale_dict[key] = (
-            count, arrow.now().format('YYYYMMDD hhmmss'))
-        self.check_cloud()
+    def new_key(self):
+        """Generate new unique key
+        """
+        # TODO
+        return 1
+
+    def scale_cloud(self, key, create_master, servant_count):
+        """
+        @return master server ip
+        """
+        master_count = 1 if create_master else 0
+        total_count = master_count + servant_count
+        self.scale_dict[key] = (total_count, master_count, servant_count,
+                                arrow.now().format('YYYYMMDD hhmmss'))
+        return self.check_cloud()
 
     def check_cloud(self):
+        """
+        @return master server ip
+        """
         # clean expired data
         self._clean_expired_data()
         # get current max scale number
-        count = self._get_max_scale_number()
+        _, master_count, servant_count, _ = self._get_max_scale_number()
         # use terraform to scale cloud
         try:
-            self._do_terraform_scale_job(count)
+            self._do_terraform_scale_job(master_count, servant_count)
         except Exception:
             # TODO exception type
             # if terraform job failed, return and wait for next call
@@ -64,7 +78,7 @@ class CloudManager(object):
     def _get_max_scale_number(self):
         if not self.scale_dict:
             return 0
-        return max(list(self.scale_dict.values()))[0]
+        return max(list(self.scale_dict.values()))
 
     def _get_secrets_path(self, client):
         # get secrets path on host by docker inspect current container
@@ -77,15 +91,16 @@ class CloudManager(object):
                 return mount['Source']
         return ""
 
-    def _do_terraform_scale_job(self, count):
+    def _do_terraform_scale_job(self, master_count, servant_count):
         """
         scale cloud to required vps count
         """
+        # TODO master count 0 and 1 handle together?
         client = docker.DockerClient(base_url='unix://var/run/docker.sock')
         environment = {
-            'TF_VAR_MASTER_COUNT': 0,
+            'TF_VAR_MASTER_COUNT': master_count,
             'TF_VAR_MASTER_PLAN': os.getenv('TF_VAR_MASTER_PLAN', 'starter'),
-            'TF_VAR_SERVANT_COUNT': count,
+            'TF_VAR_SERVANT_COUNT': servant_count,
             'TF_VAR_SERVANT_PLAN': os.getenv('TF_VAR_SERVANT_PLAN', 'starter'),
         }
         # get secrets path
@@ -107,6 +122,7 @@ class CloudManager(object):
             command="terraform output -json > " + self.terraform_result_file)
 
     def _prepare_salt_data(self, data):
+        # TODO handle if master created
         # refresh /cloud-manager-share/roster
         env = Environment(
             loader=PackageLoader('cloudmanager', package_path='templates'),
