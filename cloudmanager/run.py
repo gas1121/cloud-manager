@@ -1,25 +1,20 @@
-from flask import Flask, Blueprint
+from flask import Flask, Blueprint, request
 from werkzeug.contrib.fixers import ProxyFix
 from flask_restplus import Api, Resource, abort, apidoc
 from cloudmanager import cloud_manager
 
 
-class CloudCreateAPI(Resource):
-    def post(self, server_number):
-        if server_number in ['vultr', 'digitalocean']:
-            data = cloud_manager.list_machine()
-            return {"message": data}
-        else:
-            abort(404)
-
-
-class CloudDestroyAPI(Resource):
-    def post(self, server_number):
-        if server_number in ['vultr', 'digitalocean']:
-            data = cloud_manager.list_machine()
-            return {"message": data}
-        else:
-            abort(404)
+class CloudScaleAPI(Resource):
+    def post(self):
+        key = request.form['key']
+        master_count = request.form['master_count']
+        servant_count = request.form['servant_count']
+        return {"key": key, "master_count": master_count, "servant_count": servant_count}
+        try:
+            data = cloud_manager.scale_cloud(key, master_count, servant_count)
+        except:
+            abort()
+        return {"message": "success", "data": data}
 
 
 url_prefix = ''
@@ -33,8 +28,7 @@ app.register_blueprint(apidoc.apidoc, url_prefix=url_prefix)
 blueprint = Blueprint('', __name__, url_prefix=url_prefix)
 api = Api(blueprint, version='1.0', title='Cloud manager api',
           description='API for cloud manager', doc='/doc/')
-api.add_resource(CloudCreateAPI, '/create/<server_number>/', endpoint='')
-api.add_resource(CloudDestroyAPI, '/destroy/<server_number>/', endpoint='')
+api.add_resource(CloudScaleAPI, '/scale', endpoint='')
 app.register_blueprint(blueprint)
 
 
@@ -48,4 +42,4 @@ def after_request(response):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')

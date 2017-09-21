@@ -13,7 +13,6 @@ docker-pycreds==0.2.1     # via docker
 docker==2.5.1
 flask-restplus==0.10.1
 flask==0.12.2             # via flask-restplus
-gunicorn==19.7.1
 idna==2.5                 # via requests
 itsdangerous==0.24        # via flask
 jinja2==2.9.6             # via flask
