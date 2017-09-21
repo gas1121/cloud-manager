@@ -1,0 +1,7 @@
+[run]
+include=
+  cloudmanager/*
+  run.py
+[report]
+omit=
+  tests/*.py
