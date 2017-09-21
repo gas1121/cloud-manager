@@ -11,11 +11,11 @@ parser.add_argument('key', type=str, help='Unique key, if not set this'
                     ' promised to be returned for lately use',
                     location=('form', 'args'))
 parser.add_argument(
-    'create_master', type=bool, help='create a master vps as a swarm manager'
-    ' otherwise use current as manager', default=False,
+    'master_count', type=int, help='If create a master vps as a swarm manager'
+    ' otherwise use current as manager, only 0 and 1 is allowed', default=0,
     location=('form', 'args'))
 parser.add_argument(
-    'servant_count', type=int, help='how many servant vps should be created',
+    'servant_count', type=int, help='How many servant vps should be created',
     default=0, location=('form', 'args'))
 
 url_prefix = ''
@@ -37,12 +37,12 @@ class CloudScaleAPI(Resource):
     def post(self):
         args = parser.parse_args()
         key = args['key']
-        create_master = args['create_master']
+        master_count = 1 if args['master_count'] else 0
         servant_count = args['servant_count']
         if not key:
             key = cloud_manager.new_key()
         try:
-            master_ip = cloud_manager.scale_cloud(key, create_master,
+            master_ip = cloud_manager.scale_cloud(key, master_count,
                                                   servant_count)
         except:
             abort()
@@ -63,4 +63,5 @@ def after_request(response):
 
 
 if __name__ == '__main__':
+    # TODO clean job when quit?
     app.run(host='0.0.0.0')

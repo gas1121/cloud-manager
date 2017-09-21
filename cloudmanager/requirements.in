@@ -2,3 +2,5 @@ requests[socks]
 flask-restplus
 docker
 arrow
+nose
+coverage

@@ -27,11 +27,10 @@ class CloudManager(object):
         # TODO
         return 1
 
-    def scale_cloud(self, key, create_master, servant_count):
+    def scale_cloud(self, key, master_count, servant_count):
         """
         @return master server ip
         """
-        master_count = 1 if create_master else 0
         total_count = master_count + servant_count
         self.scale_dict[key] = (total_count, master_count, servant_count,
                                 arrow.now().format('YYYYMMDD hhmmss'))
