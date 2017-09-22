@@ -6,7 +6,7 @@ import arrow
 import docker
 from jinja2 import Environment, PackageLoader
 
-from .exceptions import MasterCountChangeError
+from .exceptions import MasterCountChangeError, TerraformOperationFailError
 
 
 class CloudManager(object):
@@ -37,7 +37,7 @@ class CloudManager(object):
         @return master server ip
         """
         if not self._is_master_count_equal(master_count):
-            raise MasterCountChangeError
+            raise MasterCountChangeError()
         total_count = master_count + servant_count
         self.scale_dict[key] = (total_count, master_count, servant_count,
                                 arrow.now().format('YYYYMMDD hhmmss'))
@@ -56,8 +56,8 @@ class CloudManager(object):
             self._do_terraform_scale_job(master_count, servant_count)
         except Exception:
             # TODO exception type
-            # if terraform job failed, return and wait for next call
-            return
+            # raise as terraform job failed
+            raise TerraformOperationFailError()
         # read data from terraform result
         data = json.load(self.terraform_result_file)
         # TODO error handling

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import arrow
 
@@ -31,9 +31,23 @@ class TestCloudManager(unittest.TestCase):
         self.assertRaises(MasterCountChangeError, self.manager.scale_cloud,
                           "key2", 0, 3)
 
-    def test_check_cloud(self):
-        # TODO
-        pass
+    @patch('cloudmanager.cloud_manager.json.load')
+    def test_check_cloud(self, load_mock):
+        self.manager._clean_expired_data = MagicMock()
+        self.manager._get_max_scale_number = MagicMock(
+            return_value=(3, 1, 2, arrow.now().format('YYYYMMDD hhmmss')))
+        self.manager._do_terraform_scale_job = MagicMock()
+        load_mock.return_value = {'test': 'value'}
+        self.manager._prepare_salt_data = MagicMock(return_value={})
+        self.manager._do_salt_init_job = MagicMock()
+        self.manager.check_cloud()
+        self.manager._clean_expired_data.assert_called_once()
+        self.manager._get_max_scale_number.assert_called_once()
+        self.manager._do_terraform_scale_job.assert_called_once_with(1, 2)
+        self.manager._prepare_salt_data.assert_called_once_with(
+            {'test': 'value'})
+        self.manager._do_salt_init_job.assert_called_once_with({})
+        # TODO exception check
 
     def test_is_master_count_equal(self):
         result = self.manager._is_master_count_equal(0)
@@ -66,5 +80,17 @@ class TestCloudManager(unittest.TestCase):
         self.assertEqual(result, (4, 0, 4, time_str))
 
     def test_do_terraform_scale_job(self):
+        # TODO
+        pass
+
+    def test_get_secrets_path(self):
+        # TODO
+        pass
+
+    def test_prepare_salt_data(self):
+        # TODO
+        pass
+
+    def test_do_salt_init_job(self):
         # TODO
         pass

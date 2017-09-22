@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint
 from werkzeug.contrib.fixers import ProxyFix
 from flask_restplus import Api, Resource, abort, apidoc, reqparse
-from cloudmanager import cloud_manager
+from cloudmanager import manager
 from cloudmanager.exceptions import (CloudManagerException,
                                      MasterCountChangeError)
 
@@ -42,9 +42,9 @@ class CloudScaleAPI(Resource):
         master_count = 1 if args['master_count'] else 0
         servant_count = args['servant_count']
         if not key:
-            key = cloud_manager.new_key()
+            key = manager.new_key()
         try:
-            master_ip = cloud_manager.scale_cloud(key, master_count,
+            master_ip = manager.scale_cloud(key, master_count,
                                                   servant_count)
         except MasterCountChangeError:
             # master server count is different and not accepted
