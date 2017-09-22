@@ -1,5 +1,5 @@
 version: "3"
 services:
-  utils:
+  cloud-manager:
     image: gas1121/cloud-manager:cloudmanager-test
     command: ping localhost
