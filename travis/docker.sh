@@ -15,6 +15,8 @@ sleep 10
 sudo docker-compose -f travis/docker-compose.test.yml exec cloud-manager nosetests -v --with-coverage --cover-erase
 # get coverage data from container
 sudo docker cp $(sudo docker-compose -f travis/docker-compose.test.yml ps -q cloud-manager):/app/.coverage .
+# change path in coverage data
+sudo sed -i 's#/app#'"$PWD"'/cloudmanager#g' .coverage
 # send coverage report
 sudo chown travis:travis .coverage
 # send coverage report
