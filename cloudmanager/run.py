@@ -2,6 +2,8 @@ from flask import Flask, Blueprint
 from werkzeug.contrib.fixers import ProxyFix
 from flask_restplus import Api, Resource, abort, apidoc, reqparse
 from cloudmanager import cloud_manager
+from cloudmanager.exceptions import (CloudManagerException,
+                                     MasterCountChangeError)
 
 
 parser = reqparse.RequestParser()
@@ -44,8 +46,14 @@ class CloudScaleAPI(Resource):
         try:
             master_ip = cloud_manager.scale_cloud(key, master_count,
                                                   servant_count)
-        except:
-            abort()
+        except MasterCountChangeError:
+            # master server count is different and not accepted
+            abort(message="Master server count required is different from"
+                  " exist request and not accepted")
+        except CloudManagerException:
+            # request scheduled but failed this time
+            abort(message="Request is scheduled but failed this time, "
+                  "will retry later", key=key)
         return {"message": "success", "key": key, "master_ip": master_ip}
 
 

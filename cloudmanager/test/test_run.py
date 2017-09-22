@@ -3,6 +3,8 @@ from unittest.mock import patch
 import json
 
 from run import app
+from cloudmanager.exceptions import (MasterCountChangeError,
+                                     TerraformOperationFailError)
 
 
 class TestRun(unittest.TestCase):
@@ -17,6 +19,7 @@ class TestRun(unittest.TestCase):
         result = self.app.get('/scale')
         self.assertEqual(result.status_code, 405)
 
+        # first request
         cloud_manager_mock.new_key.return_value = "key"
         cloud_manager_mock.scale_cloud.return_value = "1.1.1.1"
         result = self.app.post('/scale')
@@ -29,6 +32,7 @@ class TestRun(unittest.TestCase):
         self.assertEqual(data['master_ip'], '1.1.1.1')
         cloud_manager_mock.reset_mock()
 
+        # request with key exist
         cloud_manager_mock.scale_cloud.return_value = "2.1.1.1"
         result = self.app.post('/scale', data={
             'key': 'testkey', 'master_count': 1, 'servant_count': 2})
@@ -41,17 +45,32 @@ class TestRun(unittest.TestCase):
         self.assertEqual(data['master_ip'], '2.1.1.1')
         cloud_manager_mock.reset_mock()
 
-        cloud_manager_mock.scale_cloud.return_value = "3.1.1.1"
-        result = self.app.post('/scale', query_string={
-            'key': 'testkey2', 'master_count': 0, 'servant_count': 2})
+        # master server count in request is different with exist one
+        cloud_manager_mock.scale_cloud.side_effect = MasterCountChangeError
+        result = self.app.post('/scale', data={
+            'key': 'testkey', 'master_count': 1, 'servant_count': 2})
         cloud_manager_mock.new_key.assert_not_called()
         cloud_manager_mock.scale_cloud.assert_called_once_with(
-            "testkey2", 0, 2)
-        self.assertEqual(result.status_code, 200)
+            "testkey", 1, 2)
+        self.assertEqual(result.status_code, 500)
         data = json.loads(result.data)
-        self.assertEqual(data['key'], 'testkey2')
-        self.assertEqual(data['master_ip'], '3.1.1.1')
+        self.assertEqual(
+            data['message'], "Master server count required is different from"
+            " exist request and not accepted")
         cloud_manager_mock.reset_mock()
 
-    def tearDown(self):
-        pass
+        # request scheduled but failed this time
+        cloud_manager_mock.scale_cloud.side_effect = \
+            TerraformOperationFailError
+        result = self.app.post('/scale', data={
+            'key': 'testkey', 'master_count': 1, 'servant_count': 2})
+        cloud_manager_mock.new_key.assert_not_called()
+        cloud_manager_mock.scale_cloud.assert_called_once_with(
+            "testkey", 1, 2)
+        self.assertEqual(result.status_code, 500)
+        data = json.loads(result.data)
+        self.assertEqual(data['key'], 'testkey')
+        self.assertEqual(
+            data['message'], "Request is scheduled but failed this time, "
+            "will retry later")
+        cloud_manager_mock.reset_mock()

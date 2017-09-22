@@ -6,6 +6,8 @@ import arrow
 import docker
 from jinja2 import Environment, PackageLoader
 
+from .exceptions import MasterCountChangeError
+
 
 class CloudManager(object):
     """
@@ -15,22 +17,27 @@ class CloudManager(object):
            destroy all created vps
         3. Every request come with a unique key to identify
         4. Every 5 minutes cloud manager will check itself
+        5. When scale is greater than 0, different master count is not allowed
     """
     def __init__(self):
         self.scale_dict = {}
         self.expire_hour = 24
         self.terraform_result_file = "/cloud-manager-share/result.json"
+        self.next_id = 0
 
     def new_key(self):
         """Generate new unique key
         """
-        # TODO
-        return 1
+        new_key = self.next_id
+        self.next_id += 1
+        return new_key
 
     def scale_cloud(self, key, master_count, servant_count):
         """
         @return master server ip
         """
+        if not self._is_master_count_equal(master_count):
+            raise MasterCountChangeError
         total_count = master_count + servant_count
         self.scale_dict[key] = (total_count, master_count, servant_count,
                                 arrow.now().format('YYYYMMDD hhmmss'))
@@ -59,6 +66,12 @@ class CloudManager(object):
         # use salt to do initialization job if needed
         self._do_salt_init_job(pillar_dict)
 
+    def _is_master_count_equal(self, master_count):
+        for key in self.scale_dict:
+            if self.scale_dict[key][1] != master_count:
+                return False
+        return True
+
     def _clean_expired_data(self):
         """
         clean data that is over expire_hour
@@ -67,10 +80,10 @@ class CloudManager(object):
         filtered_dict = {}
         for key in self.scale_dict:
             item_time = arrow.get(
-                self.scale_dict[key][1], 'YYYYMMDD hhmmss')
+                self.scale_dict[key][-1], 'YYYYMMDD hhmmss')
             if curr_time - item_time > datetime.timedelta(
                     hours=self.expire_hour):
-                pass
+                continue
             filtered_dict[key] = self.scale_dict[key]
         self.scale_dict = filtered_dict
 
@@ -79,22 +92,10 @@ class CloudManager(object):
             return 0
         return max(list(self.scale_dict.values()))
 
-    def _get_secrets_path(self, client):
-        # get secrets path on host by docker inspect current container
-        container = client.containers.list(
-            filters={'name': 'cloud-manager'})[0]
-        api = docker.APIClient(base_url='unix://var/run/docker.sock')
-        container_info = api.inspect_container(container.id)
-        for mount in container_info['Mounts']:
-            if 'secrets' in mount['Destination']:
-                return mount['Source']
-        return ""
-
     def _do_terraform_scale_job(self, master_count, servant_count):
         """
         scale cloud to required vps count
         """
-        # TODO master count 0 and 1 handle together?
         client = docker.DockerClient(base_url='unix://var/run/docker.sock')
         environment = {
             'TF_VAR_MASTER_COUNT': master_count,
@@ -119,6 +120,17 @@ class CloudManager(object):
         client.containers.run(
             'terraform', environment=environment, volumes=volumes,
             command="terraform output -json > " + self.terraform_result_file)
+
+    def _get_secrets_path(self, client):
+        # get secrets path on host by docker inspect current container
+        container = client.containers.list(
+            filters={'name': 'cloud-manager'})[0]
+        api = docker.APIClient(base_url='unix://var/run/docker.sock')
+        container_info = api.inspect_container(container.id)
+        for mount in container_info['Mounts']:
+            if 'secrets' in mount['Destination']:
+                return mount['Source']
+        return ""
 
     def _prepare_salt_data(self, data):
         # TODO handle if master created
