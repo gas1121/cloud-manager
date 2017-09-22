@@ -17,6 +17,8 @@ sudo docker-compose -f travis/docker-compose.test.yml exec cloud-manager nosetes
 sudo docker cp $(sudo docker-compose -f travis/docker-compose.test.yml ps -q cloud-manager):/app/.coverage .
 # send coverage report
 sudo chown travis:travis .coverage
+# send coverage report
+pip install coveralls
 coveralls
 
 # spin down compose
