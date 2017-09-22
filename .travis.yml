@@ -12,4 +12,4 @@ services:
   - docker
 
 script:
-  - sudo chmod +x ./travis/travis.sh && sudo ./travis/travis.sh
+  - sudo chmod +x ./travis/docker.sh && sudo ./travis/docker.sh
