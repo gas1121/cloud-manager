@@ -26,9 +26,9 @@ class TestCloudManager(unittest.TestCase):
         self.assertEqual(self.manager.scale_dict["key"][0], 3)
         self.assertEqual(self.manager.scale_dict["key"][1], 1)
         self.assertEqual(self.manager.scale_dict["key"][2], 2)
-        time = arrow.get(self.manager.scale_dict["key"][-1], 'YYYYMMDD hhmmss')
-        time_str = time.format('YYYYMMDD hhmm')
-        self.assertEqual(curr_time.format('YYYYMMDD hhmm'), time_str)
+        time = arrow.get(self.manager.scale_dict["key"][-1], 'YYYYMMDD HHmmss')
+        time_str = time.format('YYYYMMDD HHmm')
+        self.assertEqual(curr_time.format('YYYYMMDD HHmm'), time_str)
         self.assertRaises(MasterCountChangeError, self.manager.scale_cloud,
                           "key2", 0, 3)
 
@@ -36,7 +36,7 @@ class TestCloudManager(unittest.TestCase):
     def test_check_cloud(self, load_mock):
         self.manager._clean_expired_data = MagicMock()
         self.manager._get_max_scale_number = MagicMock(
-            return_value=(3, 1, 2, arrow.now().format('YYYYMMDD hhmmss')))
+            return_value=(3, 1, 2, arrow.now().format('YYYYMMDD HHmmss')))
         self.manager._do_terraform_scale_job = MagicMock()
         load_mock.return_value = {'test': 'value'}
         self.manager._prepare_salt_data = MagicMock(return_value={})
@@ -53,7 +53,7 @@ class TestCloudManager(unittest.TestCase):
     def test_is_master_count_equal(self):
         result = self.manager._is_master_count_equal(0)
         self.assertTrue(result)
-        time_str = arrow.now().format('YYYYMMDD hhmmss')
+        time_str = arrow.now().format('YYYYMMDD HHmmss')
         self.manager.scale_dict = {'key1': (2, 1, 1, time_str)}
         result = self.manager._is_master_count_equal(0)
         self.assertFalse(result)
@@ -61,17 +61,17 @@ class TestCloudManager(unittest.TestCase):
     def test_clean_expired_data(self):
         self.manager.scale_dict = {
             'key1': (2, 1, 1, arrow.now().shift(
-                hours=-25).format('YYYYMMDD hhmmss')),
+                hours=-25).format('YYYYMMDD HHmmss')),
             'key2': (2, 1, 1, arrow.now().shift(
-                hours=-23, minutes=-50).format('YYYYMMDD hhmmss')),
+                hours=-23, minutes=-50).format('YYYYMMDD HHmmss')),
             'key3': (2, 1, 1, arrow.now().shift(
-                hours=-1).format('YYYYMMDD hhmmss')),
+                hours=-1).format('YYYYMMDD HHmmss')),
         }
         self.manager._clean_expired_data()
         self.assertEqual(len(self.manager.scale_dict), 2)
 
     def test_get_max_scale_number(self):
-        time_str = arrow.now().format('YYYYMMDD hhmmss')
+        time_str = arrow.now().format('YYYYMMDD HHmmss')
         self.manager.scale_dict = {
             'key1': (2, 0, 2, time_str),
             'key2': (4, 0, 4, time_str),
@@ -80,9 +80,14 @@ class TestCloudManager(unittest.TestCase):
         result = self.manager._get_max_scale_number()
         self.assertEqual(result, (4, 0, 4, time_str))
 
-    def test_do_terraform_scale_job(self):
-        # TODO
-        pass
+    @patch('cloudmanager.cloud_manager.docker.DockerClient')
+    def test_do_terraform_scale_job(self, dockerclient_mock):
+        client = MagicMock()
+        dockerclient_mock.return_value = client
+        self.manager._get_secrets_path = MagicMock(return_value='path')
+        self.manager._do_terraform_scale_job(1, 2)
+        self.manager._get_secrets_path.assert_called_once_with(client)
+        self.assertEqual(client.containers.run.call_count, 3)
 
     @patch('cloudmanager.cloud_manager.docker.APIClient')
     def test_get_secrets_path(self, apiclient_mock):
@@ -153,6 +158,12 @@ class TestCloudManager(unittest.TestCase):
             ]
         })
 
-    def test_do_salt_init_job(self):
-        # TODO
-        pass
+    @patch('cloudmanager.cloud_manager.docker.DockerClient')
+    def test_do_salt_init_job(self, dockerclient_mock):
+        client = MagicMock()
+        dockerclient_mock.return_value = client
+        self.manager._get_secrets_path = MagicMock(return_value='path')
+        pillar_dict = {'a': 'b'}
+        self.manager._do_salt_init_job(pillar_dict)
+        self.manager._get_secrets_path.assert_called_once_with(client)
+        client.containers.run.assert_called_once()

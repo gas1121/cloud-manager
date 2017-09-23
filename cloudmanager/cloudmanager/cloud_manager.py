@@ -41,7 +41,7 @@ class CloudManager(object):
             raise MasterCountChangeError()
         total_count = master_count + servant_count
         self.scale_dict[key] = (total_count, master_count, servant_count,
-                                arrow.now().format('YYYYMMDD hhmmss'))
+                                arrow.now().format('YYYYMMDD HHmmss'))
         return self.check_cloud()
 
     def check_cloud(self):
@@ -81,7 +81,7 @@ class CloudManager(object):
         filtered_dict = {}
         for key in self.scale_dict:
             item_time = arrow.get(
-                self.scale_dict[key][-1], 'YYYYMMDD hhmmss')
+                self.scale_dict[key][-1], 'YYYYMMDD HHmmss')
             if curr_time - item_time > datetime.timedelta(
                     hours=self.expire_hour):
                 continue
