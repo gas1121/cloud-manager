@@ -1,4 +1,4 @@
-{% for ip in master_ip_list %}
+{% for ip in master_ip_addresses['value'] %}
 master-{{ loop.index }}:
   host: {{ ip }}
   port: 22
@@ -6,7 +6,7 @@ master-{{ loop.index }}:
   sudo: True
   priv: /var/run/secrets/cloud-manager-ssh-key
 {% endfor %}
-{% for ip in servant_ip_list %}
+{% for ip in servant_ip_addresses['value'] %}
 servant-{{ loop.index }}:
   host: {{ ip }}
   port: 22

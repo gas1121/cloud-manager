@@ -23,6 +23,7 @@ class CloudManager(object):
         self.scale_dict = {}
         self.expire_hour = 24
         self.terraform_result_file = "/cloud-manager-share/result.json"
+        self.roster_file = "/cloud-manager-share/roster"
         self.next_id = 0
 
     def new_key(self):
@@ -133,26 +134,26 @@ class CloudManager(object):
         return ""
 
     def _prepare_salt_data(self, data):
-        # TODO handle if master created
         # refresh /cloud-manager-share/roster
         env = Environment(
             loader=PackageLoader('cloudmanager', package_path='templates'),
         )
         template = env.get_template('roster.jinja')
-        with open('/cloud-manager-share/roster', 'rw') as f:
+        with open(self.roster_file, 'w') as f:
             f.write(template.render(data))
         # prepare salt pillar dict
         pillar_dict = {
-            'privatenetwork': [],
+            'master_privatenetwork': [],
+            'servant_privatenetwork': [],
         }
         for index, value in enumerate(data['master_ip_addresses']['value']):
-            pillar_dict['privatenetwork'].append({
+            pillar_dict['master_privatenetwork'].append({
                 'ip': value,
                 'private_ip': data[
                     'master_private_ip_addresses']['value'][index],
             })
         for index, value in enumerate(data['servant_ip_addresses']['value']):
-            pillar_dict['privatenetwork'].append({
+            pillar_dict['servant_privatenetwork'].append({
                 'ip': value,
                 'private_ip': data[
                     'servant_private_ip_addresses']['value'][index],

@@ -4,3 +4,4 @@ docker
 arrow
 nose
 coverage
+PyYAML

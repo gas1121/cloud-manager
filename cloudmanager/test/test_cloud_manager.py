@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import arrow
+import yaml
 
 from cloudmanager.cloud_manager import CloudManager
 from cloudmanager.exceptions import MasterCountChangeError
@@ -47,7 +48,7 @@ class TestCloudManager(unittest.TestCase):
         self.manager._prepare_salt_data.assert_called_once_with(
             {'test': 'value'})
         self.manager._do_salt_init_job.assert_called_once_with({})
-        # TODO exception check
+        # TODO job with exceptions
 
     def test_is_master_count_equal(self):
         result = self.manager._is_master_count_equal(0)
@@ -83,13 +84,74 @@ class TestCloudManager(unittest.TestCase):
         # TODO
         pass
 
-    def test_get_secrets_path(self):
-        # TODO
-        pass
+    @patch('cloudmanager.cloud_manager.docker.APIClient')
+    def test_get_secrets_path(self, apiclient_mock):
+        client = MagicMock()
+        container = MagicMock()
+        container.id = 1
+        client.containers.list.return_value = [container]
+        apiclient_mock().inspect_container.return_value = {
+            'Mounts': [{
+                'Destination': 'dest',
+                'Source': 'testPath1',
+            }]
+        }
+        result = self.manager._get_secrets_path(client)
+        client.containers.list.assert_called_once()
+        apiclient_mock().inspect_container.assert_called_once_with(1)
+        self.assertEqual(result, "")
+        client.containers.list.reset_mock()
+        apiclient_mock().inspect_container.reset_mock()
+
+        apiclient_mock().inspect_container.return_value = {
+            'Mounts': [{
+                'Destination': 'secrets',
+                'Source': 'testPath2',
+            }]
+        }
+        result = self.manager._get_secrets_path(client)
+        client.containers.list.assert_called_once()
+        apiclient_mock().inspect_container.assert_called_once_with(1)
+        self.assertEqual(result, "testPath2")
 
     def test_prepare_salt_data(self):
-        # TODO
-        pass
+        self.manager.roster_file = '/tmp/roster_test'
+        data = {
+            'master_ip_addresses': {
+                'value': ['1.1.1.1', '1.1.1.2'],
+            },
+            'master_private_ip_addresses': {
+                'value': ['10.1.1.1', '10.1.1.2'],
+            },
+            'servant_ip_addresses': {
+                'value': ['2.1.1.1', '2.1.1.2'],
+            },
+            'servant_private_ip_addresses': {
+                'value': ['20.1.1.1', '20.1.1.2'],
+            },
+        }
+        result = self.manager._prepare_salt_data(data)
+        with open(self.manager.roster_file, 'r') as f:
+            text = f.read()
+            roster_dict = yaml.safe_load(text)
+            self.assertTrue('master-1' in roster_dict)
+            self.assertEqual(roster_dict['master-1']['host'], '1.1.1.1')
+            self.assertTrue('master-2' in roster_dict)
+            self.assertEqual(roster_dict['master-2']['host'], '1.1.1.2')
+            self.assertTrue('servant-1' in roster_dict)
+            self.assertEqual(roster_dict['servant-1']['host'], '2.1.1.1')
+            self.assertTrue('servant-2' in roster_dict)
+            self.assertEqual(roster_dict['servant-2']['host'], '2.1.1.2')
+        self.assertEqual(result, {
+            'master_privatenetwork': [
+                {'ip': '1.1.1.1', 'private_ip': '10.1.1.1'},
+                {'ip': '1.1.1.2', 'private_ip': '10.1.1.2'},
+            ],
+            'servant_privatenetwork': [
+                {'ip': '2.1.1.1', 'private_ip': '20.1.1.1'},
+                {'ip': '2.1.1.2', 'private_ip': '20.1.1.2'},
+            ]
+        })
 
     def test_do_salt_init_job(self):
         # TODO
