@@ -114,7 +114,6 @@ class CloudManager(object):
         }
         # ensure project's terraform container image exist
         client.images.get('cloud-manager-terraform')
-        # TODO volume issue
         client.containers.run(
             'cloud-manager-terraform', command="terraform init",
             environment=environment, volumes=volumes)
