@@ -87,6 +87,7 @@ class TestCloudManager(unittest.TestCase):
         self.manager._get_secrets_path = MagicMock(return_value='path')
         self.manager._do_terraform_scale_job(1, 2)
         self.manager._get_secrets_path.assert_called_once_with(client)
+        client.images.get.assert_called_once_with('cloud-manager-terraform')
         self.assertEqual(client.containers.run.call_count, 3)
 
     @patch('cloudmanager.cloud_manager.docker.APIClient')

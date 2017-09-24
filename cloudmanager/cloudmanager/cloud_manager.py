@@ -4,6 +4,7 @@ import json
 
 import arrow
 import docker
+from docker.errors import DockerException
 from jinja2 import Environment, PackageLoader
 
 from .exceptions import MasterCountChangeError, TerraformOperationFailError
@@ -55,8 +56,7 @@ class CloudManager(object):
         # use terraform to scale cloud
         try:
             self._do_terraform_scale_job(master_count, servant_count)
-        except Exception:
-            # TODO exception type
+        except DockerException:
             # raise as terraform job failed
             raise TerraformOperationFailError()
         # read data from terraform result
@@ -112,14 +112,18 @@ class CloudManager(object):
                 'bind': '/cloud-manager-share', 'mode': 'rw'},
             secrets_path: {'bind': '/var/run/secrets', 'mode': 'rw'},
         }
+        # ensure project's terraform container image exist
+        client.images.get('cloud-manager-terraform')
+        # TODO volume issue
         client.containers.run(
-            'terraform', command="terraform init", environment=environment,
-            volumes=volumes)
+            'cloud-manager-terraform', command="terraform init",
+            environment=environment, volumes=volumes)
         client.containers.run(
-            'terraform', command="terraform apply", environment=environment,
-            volumes=volumes)
+            'cloud-manager-terraform', command="terraform apply",
+            environment=environment, volumes=volumes)
         client.containers.run(
-            'terraform', environment=environment, volumes=volumes,
+            'cloud-manager-terraform',
+            environment=environment, volumes=volumes,
             command="terraform output -json > " + self.terraform_result_file)
 
     def _get_secrets_path(self, client):
@@ -170,5 +174,5 @@ class CloudManager(object):
             secrets_path: {'bind': '/var/run/secrets', 'mode': 'rw'},
         }
         client.containers.run(
-            'salt', command='salt-ssh -i "*" state.apply '
+            'cloud-manager-salt', command='salt-ssh -i "*" state.apply '
             'pillar=' + json.dumps(pillar_dict), volumes=volumes)
