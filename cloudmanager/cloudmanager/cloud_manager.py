@@ -56,6 +56,7 @@ class CloudManager(object):
         Manager's cheduled task
         """
         while True:
+            # TODO log when error
             self.check_cloud()
             await asyncio.sleep(self.sleep_interval)
 
