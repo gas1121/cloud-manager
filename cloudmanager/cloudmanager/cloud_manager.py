@@ -1,6 +1,8 @@
 import os
 import datetime
 import json
+import asyncio
+from threading import Thread
 
 import arrow
 import docker
@@ -12,13 +14,14 @@ from .exceptions import MasterCountChangeError, TerraformOperationFailError
 
 class CloudManager(object):
     """
-    Manage cloud vps resource with following rules:
+    Cloud server manager with a internal loop to check and prepare servers
+    every several minutes.
+    It manage cloud vps resource with following rules:
         1. Store all request vps count and use max of them as vps number,
         2. All request expire after 24 hours, and if no request left,
            destroy all created vps
         3. Every request come with a unique key to identify
-        4. Every 5 minutes cloud manager will check itself
-        5. When scale is greater than 0, different master count is not allowed
+        4. When scale is greater than 0, different master count is not allowed
     """
     def __init__(self):
         self.scale_dict = {}
@@ -26,6 +29,40 @@ class CloudManager(object):
         self.roster_file = "/cloud-manager-share/roster"
         self.next_id = 0
         self.curr_server_count = (0, 0)
+        self.sleep_interval = 5*60
+
+        # thread for internal loop
+        self.loop = asyncio.get_event_loop()
+        self.loop.call_soon_threadsafe(asyncio.async, self.check_exit_event())
+        self.loop.call_soon_threadsafe(asyncio.async, self.check_event())
+        self.t = Thread(target=self.main_loop, args=())
+
+    def start(self):
+        self.t.start()
+
+    def main_loop(self):
+        self.loop.run_forever()
+        self.loop.close()
+
+    async def check_exit_event(self):
+        """
+        Check if exit regularly
+        """
+        while True:
+            await asyncio.sleep(3)
+
+    async def check_event(self):
+        """
+        Manager's cheduled task
+        """
+        while True:
+            self.check_cloud()
+            await asyncio.sleep(self.sleep_interval)
+
+    def stop(self):
+        self.loop.stop()
+        for task in asyncio.Task.all_tasks():
+            task.cancel()
 
     def new_key(self):
         """Generate new unique key
@@ -36,20 +73,17 @@ class CloudManager(object):
 
     def scale_cloud(self, key, master_count, servant_count):
         """
-        @return master server ip
+        Add scale data to queue
         """
-        # TODO werite rest api to add request and return intermediately and
-        # running check every ? minutes on another thread
         if not self._is_master_count_equal(master_count):
             raise MasterCountChangeError()
         total_count = master_count + servant_count
         self.scale_dict[key] = (total_count, master_count, servant_count,
                                 arrow.now().format('YYYYMMDD HHmmss'))
-        return self.check_cloud()
 
     def check_cloud(self):
         """
-        @return master server ip
+        Scale cloud properly
         """
         # clean expired data
         self._clean_expired_data()
@@ -98,7 +132,7 @@ class CloudManager(object):
 
     def _get_max_scale_number(self):
         if not self.scale_dict:
-            return 0
+            return 0, 0, 0, arrow.now().format('YYYYMMDD HHmmss')
         return max(list(self.scale_dict.values()))
 
     def _do_terraform_scale_job(self, master_count, servant_count):
