@@ -48,6 +48,7 @@ class TestCloudManager(unittest.TestCase):
         self.manager._prepare_salt_data.assert_called_once_with(
             {'test': 'value'})
         self.manager._do_salt_init_job.assert_called_once_with({})
+        # TODO scale job no server changed
         # TODO job with exceptions
 
     def test_is_master_count_equal(self):

@@ -25,6 +25,7 @@ class CloudManager(object):
         self.expire_hour = 24
         self.roster_file = "/cloud-manager-share/roster"
         self.next_id = 0
+        self.curr_server_count = (0, 0)
 
     def new_key(self):
         """Generate new unique key
@@ -37,6 +38,8 @@ class CloudManager(object):
         """
         @return master server ip
         """
+        # TODO werite rest api to add request and return intermediately and
+        # running check every ? minutes on another thread
         if not self._is_master_count_equal(master_count):
             raise MasterCountChangeError()
         total_count = master_count + servant_count
@@ -52,6 +55,9 @@ class CloudManager(object):
         self._clean_expired_data()
         # get current max scale number
         _, master_count, servant_count, _ = self._get_max_scale_number()
+        # is scale number is same with current one, skip following steps
+        if (master_count, servant_count) == self.curr_server_count:
+            return
         # use terraform to scale cloud
         try:
             output = self._do_terraform_scale_job(master_count, servant_count)
@@ -65,6 +71,9 @@ class CloudManager(object):
         pillar_dict = self._prepare_salt_data(data)
         # use salt to do initialization job if needed
         self._do_salt_init_job(pillar_dict)
+        # TODO master node clean job in salt
+        # TODO check request is filled
+        # TODO if all job done, record current master and servant count
 
     def _is_master_count_equal(self, master_count):
         for key in self.scale_dict:

@@ -44,8 +44,7 @@ class CloudScaleAPI(Resource):
         if not key:
             key = manager.new_key()
         try:
-            master_ip = manager.scale_cloud(key, master_count,
-                                                  servant_count)
+            master_ip = manager.scale_cloud(key, master_count, servant_count)
         except MasterCountChangeError:
             # master server count is different and not accepted
             abort(message="Master server count required is different from"
@@ -54,6 +53,9 @@ class CloudScaleAPI(Resource):
             # request scheduled but failed this time
             abort(message="Request is scheduled but failed this time, "
                   "will retry later", key=key)
+        except Exception:
+            # unknown error
+            abort()
         return {"message": "success", "key": key, "master_ip": master_ip}
 
 
@@ -71,5 +73,6 @@ def after_request(response):
 
 
 if __name__ == '__main__':
-    # TODO clean job when quit?
+    # TODO start background asyncio event loop
     app.run(host='0.0.0.0')
+    # TODO tear down background thread
