@@ -27,7 +27,6 @@ services:
     image: cloud-manager-terraform
     volumes: 
       - tf-workspace:/app
-      - cloud-manager-share:/cloud-manager-share
       - ./secrets:/var/run/secrets
     environment:
       - TF_VAR_MASTER_COUNT=${TF_VAR_SERVANT_COUNT:-0}
@@ -44,7 +43,6 @@ services:
         - USE_MIRROR=${USE_MIRROR:-0}
     image: cloud-manager-salt
     volumes: 
-      - cloud-manager-share:/cloud-manager-share
       - ./secrets:/var/run/secrets
     networks:
       - cloud-manager

@@ -32,7 +32,7 @@ class TestCloudManager(unittest.TestCase):
         self.assertRaises(MasterCountChangeError, self.manager.scale_cloud,
                           "key2", 0, 3)
 
-    @patch('cloudmanager.cloud_manager.json.load')
+    @patch('cloudmanager.cloud_manager.json.loads')
     def test_check_cloud(self, load_mock):
         self.manager._clean_expired_data = MagicMock()
         self.manager._get_max_scale_number = MagicMock(
@@ -84,11 +84,13 @@ class TestCloudManager(unittest.TestCase):
     def test_do_terraform_scale_job(self, dockerclient_mock):
         client = MagicMock()
         dockerclient_mock.return_value = client
+        client.containers.run.return_value = "result"
         self.manager._get_secrets_path = MagicMock(return_value='path')
-        self.manager._do_terraform_scale_job(1, 2)
+        result = self.manager._do_terraform_scale_job(1, 2)
         self.manager._get_secrets_path.assert_called_once_with(client)
         client.images.get.assert_called_once_with('cloud-manager-terraform')
         self.assertEqual(client.containers.run.call_count, 3)
+        self.assertEqual(result, "result")
 
     @patch('cloudmanager.cloud_manager.docker.APIClient')
     def test_get_secrets_path(self, apiclient_mock):

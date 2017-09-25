@@ -23,7 +23,6 @@ class CloudManager(object):
     def __init__(self):
         self.scale_dict = {}
         self.expire_hour = 24
-        self.terraform_result_file = "/cloud-manager-share/result.json"
         self.roster_file = "/cloud-manager-share/roster"
         self.next_id = 0
 
@@ -55,12 +54,12 @@ class CloudManager(object):
         _, master_count, servant_count, _ = self._get_max_scale_number()
         # use terraform to scale cloud
         try:
-            self._do_terraform_scale_job(master_count, servant_count)
+            output = self._do_terraform_scale_job(master_count, servant_count)
         except DockerException:
             # raise as terraform job failed
             raise TerraformOperationFailError()
         # read data from terraform result
-        data = json.load(self.terraform_result_file)
+        data = json.loads(output)
         # TODO error handling
         # generate salt roster file and prepare pillar dict
         pillar_dict = self._prepare_salt_data(data)
@@ -108,8 +107,6 @@ class CloudManager(object):
         secrets_path = self._get_secrets_path(client)
         volumes = {
             'tf-workspace': {'bind': '/app', 'mode': 'rw'},
-            'cloud-manager-share': {
-                'bind': '/cloud-manager-share', 'mode': 'rw'},
             secrets_path: {'bind': '/var/run/secrets', 'mode': 'rw'},
         }
         # ensure project's terraform container image exist
@@ -120,10 +117,11 @@ class CloudManager(object):
         client.containers.run(
             'cloud-manager-terraform', command="terraform apply",
             environment=environment, volumes=volumes)
-        client.containers.run(
+        result = client.containers.run(
             'cloud-manager-terraform',
             environment=environment, volumes=volumes,
-            command="terraform output -json > " + self.terraform_result_file)
+            command='bash -c "terraform output -json"')
+        return result
 
     def _get_secrets_path(self, client):
         # get secrets path on host by docker inspect current container
@@ -167,8 +165,9 @@ class CloudManager(object):
         client = docker.DockerClient(base_url='unix://var/run/docker.sock')
         # get secrets path
         secrets_path = self._get_secrets_path(client)
+        # named volume follow docker compose's rule
         volumes = {
-            'cloud-manager-share': {
+            'cloudmanager_cloud-manager-share': {
                 'bind': '/cloud-manager-share', 'mode': 'rw'},
             secrets_path: {'bind': '/var/run/secrets', 'mode': 'rw'},
         }
