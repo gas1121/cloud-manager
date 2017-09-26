@@ -52,7 +52,6 @@ class CloudScaleAPI(Resource):
             "message": "Request scheduled",
             "key": key
         }
-    # TODO api to get master ip or api to deploy project
 
 
 api.add_resource(CloudScaleAPI, '/scale', endpoint='')

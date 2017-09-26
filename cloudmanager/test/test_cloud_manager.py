@@ -2,10 +2,12 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import arrow
-import yaml
+from docker.errors import DockerException
 
 from cloudmanager.cloud_manager import CloudManager
-from cloudmanager.exceptions import MasterCountChangeError
+from cloudmanager.exceptions import (MasterCountChangeError,
+                                     TerraformOperationFailError,
+                                     ClusterSetupFailError)
 
 
 class TestCloudManager(unittest.TestCase):
@@ -33,23 +35,46 @@ class TestCloudManager(unittest.TestCase):
                           "key2", 0, 3)
 
     @patch('cloudmanager.cloud_manager.json.loads')
-    def test_check_cloud(self, load_mock):
-        self.manager._clean_expired_data = MagicMock()
+    @patch('cloudmanager.cloud_manager.SaltHelper')
+    @patch('cloudmanager.cloud_manager.TerraformHelper')
+    def test_check_cloud(self, TerraformHelper_mock, SaltHelper_mock,
+                         load_mock):
+        tf_helper_mock = TerraformHelper_mock()
+        salt_helper_mock = SaltHelper_mock()
+
+        # request not changed
+        self.manager._get_max_scale_number = MagicMock(
+            return_value=(0, 0, 0, arrow.now().format('YYYYMMDD HHmmss')))
+        self.manager.check_cloud()
+        tf_helper_mock.do_terraform_scale_job.assert_not_called()
+
         self.manager._get_max_scale_number = MagicMock(
             return_value=(3, 1, 2, arrow.now().format('YYYYMMDD HHmmss')))
-        self.manager._do_terraform_scale_job = MagicMock()
+
+        # terraform operation failed
+        tf_helper_mock.do_terraform_scale_job = MagicMock(
+            side_effect=DockerException)
+        self.assertRaises(TerraformOperationFailError,
+                          self.manager.check_cloud)
+        tf_helper_mock.do_terraform_scale_job = MagicMock()
+
+        # salt job failed
+        salt_helper_mock.is_cluster_set_up.return_value = False
+        self.assertRaises(ClusterSetupFailError,
+                          self.manager.check_cloud)
+        tf_helper_mock.do_terraform_scale_job.reset_mock()
+        salt_helper_mock.do_salt_init_job.reset_mock()
+
+        # success
+        salt_helper_mock.is_cluster_set_up.return_value = True
         load_mock.return_value = {'test': 'value'}
-        self.manager._prepare_salt_data = MagicMock(return_value={})
-        self.manager._do_salt_init_job = MagicMock()
+        salt_helper_mock.prepare_salt_data = MagicMock(return_value={})
         self.manager.check_cloud()
-        self.manager._clean_expired_data.assert_called_once()
-        self.manager._get_max_scale_number.assert_called_once()
-        self.manager._do_terraform_scale_job.assert_called_once_with(1, 2)
-        self.manager._prepare_salt_data.assert_called_once_with(
+        tf_helper_mock.do_terraform_scale_job.assert_called_once_with(1, 2)
+        salt_helper_mock.prepare_salt_data.assert_called_once_with(
             {'test': 'value'})
-        self.manager._do_salt_init_job.assert_called_once_with({})
-        # TODO scale job no server changed
-        # TODO job with exceptions
+        salt_helper_mock.do_salt_init_job.assert_called_once_with({})
+        self.assertEqual(self.manager.curr_server_count, (1, 2))
 
     def test_is_master_count_equal(self):
         result = self.manager._is_master_count_equal(0)
@@ -80,94 +105,3 @@ class TestCloudManager(unittest.TestCase):
         }
         result = self.manager._get_max_scale_number()
         self.assertEqual(result, (4, 0, 4, time_str))
-
-    @patch('cloudmanager.cloud_manager.docker.DockerClient')
-    def test_do_terraform_scale_job(self, dockerclient_mock):
-        client = MagicMock()
-        dockerclient_mock.return_value = client
-        client.containers.run.return_value = "result"
-        self.manager._get_secrets_path = MagicMock(return_value='path')
-        result = self.manager._do_terraform_scale_job(1, 2)
-        self.manager._get_secrets_path.assert_called_once_with(client)
-        client.images.get.assert_called_once_with('cloud-manager-terraform')
-        self.assertEqual(client.containers.run.call_count, 3)
-        self.assertEqual(result, "result")
-
-    @patch('cloudmanager.cloud_manager.docker.APIClient')
-    def test_get_secrets_path(self, apiclient_mock):
-        client = MagicMock()
-        container = MagicMock()
-        container.id = 1
-        client.containers.list.return_value = [container]
-        apiclient_mock().inspect_container.return_value = {
-            'Mounts': [{
-                'Destination': 'dest',
-                'Source': 'testPath1',
-            }]
-        }
-        result = self.manager._get_secrets_path(client)
-        client.containers.list.assert_called_once()
-        apiclient_mock().inspect_container.assert_called_once_with(1)
-        self.assertEqual(result, "")
-        client.containers.list.reset_mock()
-        apiclient_mock().inspect_container.reset_mock()
-
-        apiclient_mock().inspect_container.return_value = {
-            'Mounts': [{
-                'Destination': 'secrets',
-                'Source': 'testPath2',
-            }]
-        }
-        result = self.manager._get_secrets_path(client)
-        client.containers.list.assert_called_once()
-        apiclient_mock().inspect_container.assert_called_once_with(1)
-        self.assertEqual(result, "testPath2")
-
-    def test_prepare_salt_data(self):
-        self.manager.roster_file = '/tmp/roster_test'
-        data = {
-            'master_ip_addresses': {
-                'value': ['1.1.1.1', '1.1.1.2'],
-            },
-            'master_private_ip_addresses': {
-                'value': ['10.1.1.1', '10.1.1.2'],
-            },
-            'servant_ip_addresses': {
-                'value': ['2.1.1.1', '2.1.1.2'],
-            },
-            'servant_private_ip_addresses': {
-                'value': ['20.1.1.1', '20.1.1.2'],
-            },
-        }
-        result = self.manager._prepare_salt_data(data)
-        with open(self.manager.roster_file, 'r') as f:
-            text = f.read()
-            roster_dict = yaml.safe_load(text)
-            self.assertTrue('master-1' in roster_dict)
-            self.assertEqual(roster_dict['master-1']['host'], '1.1.1.1')
-            self.assertTrue('master-2' in roster_dict)
-            self.assertEqual(roster_dict['master-2']['host'], '1.1.1.2')
-            self.assertTrue('servant-1' in roster_dict)
-            self.assertEqual(roster_dict['servant-1']['host'], '2.1.1.1')
-            self.assertTrue('servant-2' in roster_dict)
-            self.assertEqual(roster_dict['servant-2']['host'], '2.1.1.2')
-        self.assertEqual(result, {
-            'master_privatenetwork': [
-                {'ip': '1.1.1.1', 'private_ip': '10.1.1.1'},
-                {'ip': '1.1.1.2', 'private_ip': '10.1.1.2'},
-            ],
-            'servant_privatenetwork': [
-                {'ip': '2.1.1.1', 'private_ip': '20.1.1.1'},
-                {'ip': '2.1.1.2', 'private_ip': '20.1.1.2'},
-            ]
-        })
-
-    @patch('cloudmanager.cloud_manager.docker.DockerClient')
-    def test_do_salt_init_job(self, dockerclient_mock):
-        client = MagicMock()
-        dockerclient_mock.return_value = client
-        self.manager._get_secrets_path = MagicMock(return_value='path')
-        pillar_dict = {'a': 'b'}
-        self.manager._do_salt_init_job(pillar_dict)
-        self.manager._get_secrets_path.assert_called_once_with(client)
-        client.containers.run.assert_called_once()
