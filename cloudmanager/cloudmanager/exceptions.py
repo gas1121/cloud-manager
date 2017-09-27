@@ -8,11 +8,11 @@ class MasterCountChangeError(CloudManagerException):
     pass
 
 
-class TerraformOperationFailError(CloudManagerException):
+class TerraformOperationError(CloudManagerException):
     """Exception when terraform failed to scale cloud"""
     pass
 
 
-class ClusterSetupFailError(CloudManagerException):
+class ClusterSetupError(CloudManagerException):
     """Exception when cluster check failed after operation"""
     pass

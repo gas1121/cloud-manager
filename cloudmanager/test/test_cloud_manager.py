@@ -6,8 +6,8 @@ from docker.errors import DockerException
 
 from cloudmanager.cloud_manager import CloudManager
 from cloudmanager.exceptions import (MasterCountChangeError,
-                                     TerraformOperationFailError,
-                                     ClusterSetupFailError)
+                                     TerraformOperationError,
+                                     ClusterSetupError)
 
 
 class TestCloudManager(unittest.TestCase):
@@ -54,13 +54,13 @@ class TestCloudManager(unittest.TestCase):
         # terraform operation failed
         tf_helper_mock.do_terraform_scale_job = MagicMock(
             side_effect=DockerException)
-        self.assertRaises(TerraformOperationFailError,
+        self.assertRaises(TerraformOperationError,
                           self.manager.check_cloud)
         tf_helper_mock.do_terraform_scale_job = MagicMock()
 
         # salt job failed
         salt_helper_mock.is_cluster_set_up.return_value = False
-        self.assertRaises(ClusterSetupFailError,
+        self.assertRaises(ClusterSetupError,
                           self.manager.check_cloud)
         tf_helper_mock.do_terraform_scale_job.reset_mock()
         salt_helper_mock.do_salt_init_job.reset_mock()

@@ -9,8 +9,8 @@ from docker.errors import DockerException
 
 from .terraform_helper import TerraformHelper
 from .salt_helper import SaltHelper
-from .exceptions import (MasterCountChangeError, TerraformOperationFailError,
-                         ClusterSetupFailError)
+from .exceptions import (MasterCountChangeError, TerraformOperationError,
+                         ClusterSetupError)
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class CloudManager(object):
         while True:
             try:
                 self.check_cloud()
-            except TerraformOperationFailError:
+            except TerraformOperationError:
                 log.info('terraform operation failed, wait for next try')
             await asyncio.sleep(self.sleep_interval)
 
@@ -106,7 +106,7 @@ class CloudManager(object):
                 master_count, servant_count)
         except DockerException:
             # raise as terraform job failed
-            raise TerraformOperationFailError
+            raise TerraformOperationError
         # read data from terraform result
         data = json.loads(output)
         salt_helper = SaltHelper()
@@ -116,7 +116,7 @@ class CloudManager(object):
         salt_helper.do_salt_init_job(pillar_dict)
         # check if request is handled properly
         if not salt_helper.is_cluster_set_up(master_count, servant_count):
-            raise ClusterSetupFailError
+            raise ClusterSetupError
         # if all job done, record current master and servant count
         self.curr_server_count = master_count, servant_count
 
