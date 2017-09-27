@@ -110,10 +110,10 @@ class CloudManager(object):
         # read data from terraform result
         data = json.loads(output)
         salt_helper = SaltHelper()
-        # generate salt roster file and prepare pillar dict
-        pillar_dict = salt_helper.prepare_salt_data(data)
+        # prepare salt for work
+        salt_helper.prepare_salt_data(data)
         # use salt to do initialization job if needed
-        salt_helper.do_salt_init_job(pillar_dict)
+        salt_helper.do_salt_init_job()
         # check if request is handled properly
         if not salt_helper.is_cluster_set_up(master_count, servant_count):
             raise ClusterSetupError

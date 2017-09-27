@@ -1,4 +1,4 @@
-import json
+import os
 
 import docker
 from jinja2 import Environment, PackageLoader
@@ -9,42 +9,59 @@ from .util import get_secrets_path
 class SaltHelper(object):
     def __init__(self):
         self.roster_file = "/cloud-manager-share/roster"
+        self.pillar_folder = "/cloud-manager-share/pillar/"
         self.client = docker.DockerClient(
             base_url='unix://var/run/docker.sock')
 
-    def prepare_salt_data(self, data):
-        # refresh /cloud-manager-share/roster
-        env = Environment(
+        self.env = Environment(
             loader=PackageLoader('cloudmanager', package_path='templates'),
         )
-        template = env.get_template('roster.jinja')
+
+    def prepare_salt_data(self, data):
+        # prepare roster file
+        self._prepare_roster(data)
+        # prepare pillar data
+        self._prepare_pillar(data)
+
+    def _prepare_roster(self, data):
+        """
+        refresh /cloud-manager-share/roster
+        @param data dict parsed from terraform's output
+        """
+        if not os.path.exists(os.path.dirname(self.roster_file)):
+            os.makedirs(os.path.dirname(self.roster_file))
+        template = self.env.get_template('roster.jinja')
         with open(self.roster_file, 'w') as f:
             f.write(template.render(data))
-        # prepare salt pillar dict
-        pillar_dict = {
-            'master_privatenetwork': [],
-            'servant_privatenetwork': [],
-        }
-        for index, value in enumerate(data['master_ip_addresses']['value']):
-            pillar_dict['master_privatenetwork'].append({
-                'ip': value,
-                'private_ip': data[
-                    'master_private_ip_addresses']['value'][index],
-            })
-        for index, value in enumerate(data['servant_ip_addresses']['value']):
-            pillar_dict['servant_privatenetwork'].append({
-                'ip': value,
-                'private_ip': data[
-                    'servant_private_ip_addresses']['value'][index],
-            })
-        return pillar_dict
 
-    def do_salt_init_job(self, pillar_dict):
+    def _prepare_pillar(self, data):
+        """
+        prepare pillar data in /cloud-manager-share/pillar/
+        @param data dict parsed from terraform's output
+        """
+        if not os.path.exists(os.path.dirname(self.pillar_folder)):
+            os.makedirs(os.path.dirname(self.pillar_folder))
+        # render top.sls
+        template = self.env.get_template('pillar/top.sls.jinja')
+        with open(self.pillar_folder + 'top.sls', 'w') as f:
+            f.write(template.render(data))
+        # render privatenetwork.sls for each server
+        template = self.env.get_template('pillar/privatenetwork.sls.jinja')
+        for prefix in ['master', 'servant']:
+            for idx, val in enumerate(data[prefix + '_ip_addresses']['value']):
+                file_name = 'privatenetwork-{0}-{1}.sls'.format(
+                    prefix, idx + 1)
+                private_ip = data[
+                    prefix + '_private_ip_addresses']['value'][idx]
+                with open(self.pillar_folder + file_name, 'w') as f:
+                    f.write(template.render({'private_ip': private_ip}))
+
+    def do_salt_init_job(self):
         # TODO master node clean job in salt
         volumes = self._get_volumes_dict()
         self.client.containers.run(
-            'cloud-manager-salt', command='salt-ssh -i "*" state.apply '
-            'pillar=' + json.dumps(pillar_dict), volumes=volumes)
+            'cloud-manager-salt', command='salt-ssh -i "*" state.apply',
+            volumes=volumes)
 
     def is_cluster_set_up(self, master_count, servant_count):
         """

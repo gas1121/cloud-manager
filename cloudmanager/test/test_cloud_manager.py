@@ -68,12 +68,12 @@ class TestCloudManager(unittest.TestCase):
         # success
         salt_helper_mock.is_cluster_set_up.return_value = True
         load_mock.return_value = {'test': 'value'}
-        salt_helper_mock.prepare_salt_data = MagicMock(return_value={})
+        salt_helper_mock.prepare_salt_data = MagicMock()
         self.manager.check_cloud()
         tf_helper_mock.do_terraform_scale_job.assert_called_once_with(1, 2)
         salt_helper_mock.prepare_salt_data.assert_called_once_with(
             {'test': 'value'})
-        salt_helper_mock.do_salt_init_job.assert_called_once_with({})
+        salt_helper_mock.do_salt_init_job.assert_called_once_with()
         self.assertEqual(self.manager.curr_server_count, (1, 2))
 
     def test_is_master_count_equal(self):

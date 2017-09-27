@@ -1,0 +1,9 @@
+base:
+{% for ip in master_ip_addresses['value'] %}
+  master-{{ loop.index }}:
+    - privatenetwork-master-{{ loop.index }}
+{% endfor %}
+{% for ip in servant_ip_addresses['value'] %}
+  servant-{{ loop.index }}:
+    - privatenetwork-servant-{{ loop.index }}
+{% endfor %}
