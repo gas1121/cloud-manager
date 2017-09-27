@@ -97,6 +97,11 @@ class TestCloudManager(unittest.TestCase):
         self.assertEqual(len(self.manager.scale_dict), 2)
 
     def test_get_max_scale_number(self):
+        result = self.manager._get_max_scale_number()
+        self.assertEqual(result[0], 0)
+        self.assertEqual(result[1], 0)
+        self.assertEqual(result[2], 0)
+
         time_str = arrow.now().format('YYYYMMDD HHmmss')
         self.manager.scale_dict = {
             'key1': (2, 0, 2, time_str),

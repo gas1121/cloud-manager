@@ -50,23 +50,18 @@ class CloudManager(object):
         """
         Check if exit regularly
         """
-        print('check_exit_event')
         while True:
-            print('check_exit_event sleep')
             await asyncio.sleep(3)
 
     async def check_event(self):
         """
         Manager's cheduled task
         """
-        print('check_event')
         while True:
-            print('check_event try')
             try:
                 self.check_cloud()
             except TerraformOperationFailError:
                 log.info('terraform operation failed, wait for next try')
-            print('check_event sleep')
             await asyncio.sleep(self.sleep_interval)
 
     def stop(self):
