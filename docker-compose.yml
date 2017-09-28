@@ -45,6 +45,7 @@ services:
     volumes: 
       - cloud-manager-share:/cloud-manager-share
       - ./salt/srv/salt:/srv/salt
+      - ./salt/srv/pillar:/srv/pillar
       - ./secrets:/var/run/secrets
     networks:
       - cloud-manager
