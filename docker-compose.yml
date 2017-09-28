@@ -43,6 +43,8 @@ services:
         - USE_MIRROR=${USE_MIRROR:-0}
     image: cloud-manager-salt
     volumes: 
+      - cloud-manager-share:/cloud-manager-share
+      - ./salt/srv/salt:/srv/salt
       - ./secrets:/var/run/secrets
     networks:
       - cloud-manager

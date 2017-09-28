@@ -1,5 +1,8 @@
 base:
   '*':
     - privatenetwork
-  #master:
-  #servant:
+    - docker
+  'master-*':
+    - docker.swarm
+  'servant-*':
+    - docker.swarm
