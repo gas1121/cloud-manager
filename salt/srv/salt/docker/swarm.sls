@@ -17,6 +17,10 @@ docker.swarm.init:
       - "docker node ls"
     - require:
       - docker.running
+docker.swarm.node.clean:
+  cmd.script:
+    - source: salt://docker/clean_node.py
+    - shell: /bin/bash
 {% endif %}
 {% if role and role == 'worker' %}
 docker.swarm.join:

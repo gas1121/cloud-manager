@@ -92,6 +92,10 @@ class TestSaltHelper(unittest.TestCase):
         self.assertFalse(self.salt_helper.is_cluster_set_up(1, 3))
         self.assertTrue(self.salt_helper.is_cluster_set_up(1, 2))
 
+    def test_clean_node(self):
+        # TODO
+        pass
+
     @patch('cloudmanager.salt_helper.get_secrets_path')
     def test_get_volumes_dict(self, get_secrets_path_mock):
         get_secrets_path_mock.return_value = 'path'

@@ -57,7 +57,6 @@ class SaltHelper(object):
                     f.write(template.render({'private_ip': private_ip}))
 
     def do_salt_init_job(self):
-        # TODO master node clean job in salt
         volumes = self._get_volumes_dict()
         self.client.containers.run(
             'cloud-manager-salt', command='salt-ssh -i "*" state.apply',
@@ -67,6 +66,9 @@ class SaltHelper(object):
         """
         check if cluster is set up properly
         """
+        # if master node is local machine, clean outdated node manually
+        if master_count == 0:
+            self._clean_node()
         # if master count is 0, then local machine is manager
         if master_count == 0:
             # check if swarm is setup properly by node count
@@ -83,6 +85,9 @@ class SaltHelper(object):
                 return True
             else:
                 return False
+
+    def _clean_node(self):
+        pass
 
     def _get_volumes_dict(self):
         # get secrets path
