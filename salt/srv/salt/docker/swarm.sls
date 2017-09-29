@@ -1,33 +1,29 @@
-{% set role=salt['pillar.get']('docker:swarm:role', 'worker') %}
+{% set role=salt['pillar.get']('docker:swarm:role', None) %}
+{% set advertise_addr=salt['pillar.get']('docker:swarm:advertise_addr', None) %}
+{% set token=salt['pillar.get']('docker:swarm:token', None) %}
+{% set master_addr=salt['pillar.get']('docker:swarm:master_addr', None) %}
 
 include:
   - docker
 
-{% if salt['pillar.get']('docker:swarm:worker', None) %}
-#docker.swarm.join:
-#  cmd.run:
-#    - name: docker swarm join --token {{ pillar['docker']['swarm']['worker']['join-token'] }} {{ pillar['docker']['swarm']['worker']['manager-ip'] }}
-#    - unless:
-#      - docker info --format "{{ '{{' }}.Swarm{{ '}}' }}" | grep -w active
-#    - require:
-#      - docker.running
-{% endif %}
-{% if role=='manager' %}
-docker.swarm.manger:
+{% if role and role == 'master' %}
+docker.swarm.init:
   cmd.run:
-    - name:
+    - name: >
+        docker swarm init
+        {%- if advertise_addr is defined %} --advertise-addr {{ advertise_addr }}{%- endif %}
     - unless:
       - "test -e /var/lib/docker/swarm/state.json"
-      - "docker node ls | grep -q '{{ network.hostname }}'"
+      - "docker node ls"
     - require:
       - docker.running
 {% endif %}
-{% if role=='worker' %}
-docker.swarm.worker:
+{% if role and role == 'worker' %}
+docker.swarm.join:
   cmd.run:
-    - name:
+    - name: docker swarm join --token {{ token }} {{ master_addr }}
     - unless:
-      - 
+      - docker info --format "{{ '{{ .Swarm }}' }}" | grep -w active
     - require:
       - docker.running
 {% endif %}

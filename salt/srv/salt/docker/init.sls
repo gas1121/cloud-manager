@@ -1,4 +1,4 @@
-{% set compose_version=salt['pillar.get']('docker:compose:version', 1.16.2) %}
+{% set compose_version=salt['pillar.get']('docker:compose:version', '1.16.2') %}
 
 docker.install:
   cmd.run:

@@ -22,7 +22,6 @@ RUN pip install salt-ssh
 # Install salt-formulas
 RUN mkdir -p /salt-formulas
 WORKDIR /salt-formulas
-RUN git clone https://github.com/salt-formulas/salt-formula-docker.git
 
 COPY ./salt/master.d/master.conf /etc/salt/master.d/master.conf
 COPY ./salt/srv /srv
