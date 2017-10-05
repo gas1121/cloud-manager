@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 
 import yaml
 
@@ -92,9 +92,27 @@ class TestSaltHelper(unittest.TestCase):
         self.assertFalse(self.salt_helper.is_cluster_set_up(1, 3))
         self.assertTrue(self.salt_helper.is_cluster_set_up(1, 2))
 
-    def test_clean_node(self):
-        # TODO
-        pass
+    @patch('cloudmanager.salt_helper.docker')
+    def test_clean_node(self, docker_mock):
+        docker_mock.APIClient().nodes.return_value = [{
+                'ID': '1',
+                'Status': {
+                    'State': 'ready'
+                }
+            }, {
+                'ID': '2',
+                'Status': {
+                    'State': 'down'
+                }
+            }, {
+                'ID': '3',
+                'Status': {
+                    'State': 'down'
+                }
+            }]
+        self.salt_helper._clean_node()
+        docker_mock.APIClient().remove_node.assert_has_calls(
+            [call('2'), call('3')])
 
     @patch('cloudmanager.salt_helper.get_secrets_path')
     def test_get_volumes_dict(self, get_secrets_path_mock):

@@ -87,7 +87,14 @@ class SaltHelper(object):
                 return False
 
     def _clean_node(self):
-        pass
+        api = docker.APIClient(base_url='unix://var/run/docker.sock')
+        clean_node_list = []
+        nodes = api.nodes()
+        for node in nodes:
+            if node['Status']['State'] == 'down':
+                clean_node_list.append(node['ID'])
+        for node_id in clean_node_list:
+            api.remove_node(node_id)
 
     def _get_volumes_dict(self):
         # get secrets path
