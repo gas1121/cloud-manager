@@ -81,6 +81,7 @@ class TestSaltHelper(unittest.TestCase):
         self.client_mock.containers.run.assert_called_once()
 
     def test_is_cluster_set_up(self):
+        self.salt_helper._clean_node = MagicMock()
         # master count is 0
         self.client_mock.nodes.list.return_value = [1, 1, 1]
         self.assertFalse(self.salt_helper.is_cluster_set_up(0, 3))
